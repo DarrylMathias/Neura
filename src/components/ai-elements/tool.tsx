@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import {
+  BotMessageSquare,
   CheckCircleIcon,
   ChevronDownIcon,
   CircleIcon,
@@ -37,25 +38,19 @@ export type ToolHeaderProps = {
 };
 
 const getStatusBadge = (status: ToolUIPart["state"]) => {
-  const labels: Record<ToolUIPart["state"], string> = {
+  const labels = {
     "input-streaming": "Pending",
     "input-available": "Running",
-    "approval-requested": "Awaiting Approval",
-    "approval-responded": "Responded",
     "output-available": "Completed",
     "output-error": "Error",
-    "output-denied": "Denied",
-  };
+  } as const;
 
-  const icons: Record<ToolUIPart["state"], ReactNode> = {
+  const icons = {
     "input-streaming": <CircleIcon className="size-4" />,
     "input-available": <ClockIcon className="size-4 animate-pulse" />,
-    "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
     "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
     "output-error": <XCircleIcon className="size-4 text-red-600" />,
-    "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
-  };
+  } as const;
 
   return (
     <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
@@ -80,7 +75,7 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
+      <BotMessageSquare className="size-4 text-muted-foreground" />
       <span className="font-medium text-sm">
         {title ?? type.split("-").slice(1).join("-")}
       </span>
@@ -132,12 +127,17 @@ export const ToolOutput = ({
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  let Output: ReactNode = null;
 
-  if (typeof output === "object" && !isValidElement(output)) {
+  if (errorText) {
+    // If there's an error, format it clearly
     Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+      <pre className="whitespace-pre-wrap break-words text-red-700 p-2 rounded-md">
+        {errorText}
+      </pre>
     );
+  } else if (typeof output === "object" && !isValidElement(output)) {
+    Output = <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />;
   } else if (typeof output === "string") {
     Output = <CodeBlock code={output} language="json" />;
   }
@@ -149,13 +149,10 @@ export const ToolOutput = ({
       </h4>
       <div
         className={cn(
-          "overflow-x-auto rounded-md text-xs [&_table]:w-full",
-          errorText
-            ? "bg-destructive/10 text-destructive"
-            : "bg-muted/50 text-foreground"
+          "overflow-auto rounded-md text-xs [&_table]:w-full",
+          errorText ? "bg-destructive/10 text-red-700" : "bg-muted/50 text-foreground"
         )}
       >
-        {errorText && <div>{errorText}</div>}
         {Output}
       </div>
     </div>
