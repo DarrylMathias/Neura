@@ -3,7 +3,7 @@ import { Experimental_Agent as Agent, Output } from "ai";
 import { z } from "zod";
 
 export const contextAgent = new Agent({
-  model: google("gemini-2.5-pro"),
+  model: google("gemini-2.5-flash"),
   system: `
   You are the ContextAgent — the orchestrator of the AI system.
 
@@ -49,6 +49,10 @@ export const contextAgent = new Agent({
             .string()
             .optional()
             .describe("Time context like 'now', 'tomorrow', etc."),
+          priority: z
+            .string()
+            .optional()
+            .describe("Most valuable constraint for the time"),
           origin: z
             .string()
             .optional()
@@ -65,12 +69,12 @@ export const contextAgent = new Agent({
             ),
         })
         .describe(
-          "Structured extracted data relevant to the intent, that other agents might use in fetching relevant data"
+          "Structured extracted data relevant to the intent, that other agents might use in fetching relevant data and reasoning"
         ),
       required_data: z
         .array(z.string())
         .describe(
-          "Types of tools other agents must use, e.g. ['places', 'weather', 'routes']."
+          "To determine the type of tools other agents must use, e.g. ['places', 'weather', 'routes']."
         ),
       reasoning: z
         .string()

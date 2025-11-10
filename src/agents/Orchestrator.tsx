@@ -12,7 +12,7 @@ const allowedAgents = [
 export const orchestrator = new Agent({
   model: google("gemini-2.5-flash"),
   system: `
-      You are the Orchestrator — the orchestrator of the system.
+      You are the Orchestrator — the orchestrator of the application which is an agentic map.
       Your role is to interpret the user's intent and determine which of the following agents are needed:
       - ContextAgent: understands what the user wants.
       - DataAgent: gathers relevant real-time data.
@@ -20,6 +20,8 @@ export const orchestrator = new Agent({
       - ActionAgent: executes the plan (renders map).
 
       Only choose from these agents. Do not invent new ones.
+      Choose agents only if required. For any non navigation purposes, don't use them.
+      Also call the context agent to understand contexts regarding the main purpose of the application only.
     `,
   experimental_output: Output.object({
     schema: z.object({

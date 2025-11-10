@@ -1,36 +1,59 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const Map = () => {
+const Map = ({
+  location,
+}: {
+  location: { latitude: number; longitude: number };
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markerInstanceRef = useRef<any>(null);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   useEffect(() => {
+    if (window.mappls || document.getElementById("mappls-script")) {
+      return;
+    }
+
     const script = document.createElement("script");
+    script.id = "mappls-script"; 
     script.src = `https://apis.mappls.com/advancedmaps/api/${process.env.NEXT_PUBLIC_MAPPLS_API_KEY}/map_sdk?v=3.0&layer=vector`;
     script.async = true;
 
     script.onload = () => {
-      if (window.mappls) {
-        const mapObject = new window.mappls.Map(mapRef.current, {
-          center: [19.08, 72.88],
-          zoom: 12,
-        });
-
-        new window.mappls.Marker({
-          map: mapObject,
-          position: { lat: 19.08, lng: 72.88 },
-          popupHtml: "<b style='color:black;'>Marker added successfully!</b>",
-          fitbounds: true,
-        });
-      }
+      setIsScriptLoaded(true);
     };
 
     document.body.appendChild(script);
 
-    return () => {
-      document.body.removeChild(script);
-    };
   }, []);
+
+  useEffect(() => {
+    if (!isScriptLoaded || !mapRef.current) {
+      return;
+    }
+
+    const { latitude, longitude } = location;
+
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new window.mappls.Map(mapRef.current, {
+        center: [latitude, longitude],
+        zoom: 8,
+      });
+
+      markerInstanceRef.current = new window.mappls.Marker({
+        map: mapInstanceRef.current,
+        position: { lat: latitude, lng: longitude },
+        popupHtml: "<b style='color:black;'>You are here!</b>",
+        fitbounds: true,
+      });
+    } else {
+      mapInstanceRef.current.setCenter([latitude, longitude]);
+      markerInstanceRef.current.setPosition({ lat: latitude, lng: longitude });
+    }
+
+  }, [location, isScriptLoaded]);
 
   return (
     <div

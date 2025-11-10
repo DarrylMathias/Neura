@@ -75,7 +75,11 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <BotMessageSquare className="size-4 text-muted-foreground" />
+      {type.startsWith("data-") ? (
+        <BotMessageSquare className="size-4 text-muted-foreground" />
+      ) : (
+        <WrenchIcon className="size-4 text-muted-foreground" />
+      )}
       <span className="font-medium text-sm">
         {title ?? type.split("-").slice(1).join("-")}
       </span>
@@ -121,6 +125,7 @@ export const ToolOutput = ({
   className,
   output,
   errorText,
+  type,
   ...props
 }: ToolOutputProps) => {
   if (!(output || errorText)) {
@@ -137,7 +142,9 @@ export const ToolOutput = ({
       </pre>
     );
   } else if (typeof output === "object" && !isValidElement(output)) {
-    Output = <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />;
+    Output = (
+      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+    );
   } else if (typeof output === "string") {
     Output = <CodeBlock code={output} language="json" />;
   }
@@ -150,7 +157,9 @@ export const ToolOutput = ({
       <div
         className={cn(
           "overflow-auto rounded-md text-xs [&_table]:w-full",
-          errorText ? "bg-destructive/10 text-red-700" : "bg-muted/50 text-foreground"
+          errorText
+            ? "bg-destructive/10 text-red-700"
+            : "bg-muted/50 text-foreground"
         )}
       >
         {Output}

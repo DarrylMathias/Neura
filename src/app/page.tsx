@@ -4,21 +4,36 @@ import { useRef, useState, useEffect } from "react";
 import ChatBotDemo from "@/components/Chatbot";
 import Map from "@/components/Map";
 import RouteMap from "@/components/RouteMap";
+import axios from "axios";
 
 const Page = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dividerX, setDividerX] = useState(70);
   const [isMobile, setIsMobile] = useState(false);
-  const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
+  const [location, setLocation] = useState({
+    latitude: 18.9582,
+    longitude: 72.8321,
+  });
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
+    const fetchData = async () => {
+      return await axios.get("/api/get-ip").catch((err) => {
+        console.log(`Error in fetching : ${err}`);
       });
-    });
-  },[]);
+    };
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => {
+        fetchData();
+      }
+    );
+    
+  }, []);
 
   useEffect(() => {
     const checkScreen = () => setIsMobile(window.innerWidth < 1024);
@@ -61,7 +76,7 @@ const Page = () => {
         style={!isMobile ? { width: `${dividerX}%` } : {}}
       >
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-          <Map />
+          <Map location={location} />
           {/* <RouteMap /> */}
         </div>
       </div>

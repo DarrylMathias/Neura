@@ -1,11 +1,19 @@
 "use client";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+
+type Coord = {
+  lat: number;
+  lng: number;
+};
 
 const RouteMap = () => {
   const mapRef = useRef<any>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [map, setMap] = useState<any>(null);
+  const [route, setRoute] = useState<Coord[] | null>(null);
 
+  // Script
   useEffect(() => {
     const script = document.createElement("script");
     script.src = `https://apis.mappls.com/advancedmaps/api/${process.env.NEXT_PUBLIC_MAPPLS_API_KEY}/map_sdk?v=3.0&layer=vector`;
@@ -32,49 +40,59 @@ const RouteMap = () => {
   }, []);
 
   useEffect(() => {
-    if (!isMapLoaded || !map) return;
+    const fetchRoute = async (coord1: Coord, coord2: Coord) => {
+      try {
+        const result = await axios.get(
+          `http://router.project-osrm.org/route/v1/car/${coord1.lng},${coord1.lat};${coord2.lng},${coord2.lat}?geometries=geojson&overview=full&alternatives=3`
+        );
+        const data = result.data;
+        if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
+          console.error("OSRM could not find a route:", data.code);
+          return;
+        }
+        const coords = data.routes[0].geometry.coordinates;
+        setRoute(
+          coords.map((coord: number[]) => ({
+            lat: coord[1],
+            lng: coord[0],
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching route:", error);
+      }
+    };
 
-    const path = [
-      { lat: 28.55108, lng: 77.26913 },
-      { lat: 28.55106, lng: 77.26906 },
-      { lat: 28.55105, lng: 77.26897 },
-      { lat: 28.55101, lng: 77.26872 },
-      { lat: 28.55099, lng: 77.26849 },
-      { lat: 28.55097, lng: 77.26831 },
-      { lat: 28.55093, lng: 77.26794 },
-      { lat: 28.55089, lng: 77.2676 },
-      { lat: 28.55123, lng: 77.26756 },
-      { lat: 28.55145, lng: 77.26758 },
-      { lat: 28.55168, lng: 77.26758 },
-      { lat: 28.55175, lng: 77.26759 },
-      { lat: 28.55177, lng: 77.26755 },
-      { lat: 28.55179, lng: 77.26753 },
-    ];
+    fetchRoute({ lat: 51.5072, lng: 0.1276 }, { lat: 19.6967, lng: 72.7699 });
+  }, []);
+
+  useEffect(() => {
+    if (!isMapLoaded || !map || !route) return;
+    console.log(route);
 
     // Draw the polyline
     const polyline = new window.mappls.Polyline({
       map,
-      path,
+      path: route,
       strokeColor: "#FF5733",
       strokeOpacity: 1.0,
       strokeWeight: 6,
       fitbounds: true,
-      animate: {
-        path: true,
-        speed: 5,
-      },
+      // animate: {
+      //   path: true,
+      //   speed: 5
+      // },
     });
 
     // Add the person marker
     new window.mappls.Marker({
       map,
-      position: path[path.length - 1],
+      position: route[route.length - 1],
       icon: "https://cdn-icons-png.flaticon.com/512/64/64572.png",
       width: 40,
       height: 40,
       popupHtml: "<b style='color:black;'>Manish Raja, Mumbai</b>",
     });
-  }, [isMapLoaded, map]);
+  }, [isMapLoaded, map, route]);
 
   return (
     <div

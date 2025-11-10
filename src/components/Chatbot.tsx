@@ -180,6 +180,7 @@ const ChatBotDemo = ({
                                       : "No data available."
                                   }
                                   errorText={part.errorText}
+                                  type="tool"
                                 />
                               </pre>
                             </ToolContent>
@@ -187,7 +188,10 @@ const ChatBotDemo = ({
                         );
                       }
 
-                      if (part.type?.startsWith("data-") && messageIndex == messages.length - 1) {
+                      if (
+                        part.type?.startsWith("data-") &&
+                        messageIndex == messages.length - 1
+                      ) {
                         console.log(part.type);
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
@@ -208,15 +212,25 @@ const ChatBotDemo = ({
                                   <ToolOutput
                                     output={
                                       part.data.agentData
-                                        ? typeof part.data.agentData === "string"
+                                        ? typeof part.data.agentData ===
+                                          "string"
                                           ? part.data.agentData
-                                          : JSON.stringify(part.data.agentData, null, 2)
+                                          : JSON.stringify(
+                                              part.data.agentData,
+                                              null,
+                                              2
+                                            )
                                         : "No data available."
                                     }
                                     errorText={part.errorText}
+                                    type="data"
                                   />
                                 ) : (
-                                  <ToolOutput output="" errorText={part.data.agentData} />
+                                  <ToolOutput
+                                    output=""
+                                    errorText={part.data.agentData}
+                                    type="data"
+                                  />
                                 )}
                               </pre>
                             </ToolContent>

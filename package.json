@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.43",
     "@ai-sdk/google": "^2.0.29",
     "@ai-sdk/react": "^2.0.89",
+    "@deepagent/google-custom-search": "^8.2.2",
     "@deepagent/weather": "^8.2.2",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
