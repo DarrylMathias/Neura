@@ -35,6 +35,7 @@ export const nearbyPlaces = tool({
       }&lon=${coord.lng}&radius=${radius}`
     );
     const data = result.data;
+    console.log('Nearby Places tool called');
     return data;
   },
 });

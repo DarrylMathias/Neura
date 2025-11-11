@@ -10,6 +10,7 @@ export const googlesearch = tool({
   }),
   execute: async ({ query }) => {
     const googleCustomSearch = new GoogleCustomSearchClient();
+    console.log('Google search tool called');
     const results = await googleCustomSearch.search(query);
     return results;
   },

@@ -25,6 +25,7 @@ export const trafficFlow = tool({
       `https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/${zoom}/json?key=${process.env.TOM_TOM_API_KEY}&point=${coord.lat},${coord.lng}`
     );
     const data = result.data;
+    console.log('Traffic flow tool called');
     return data;
   },
 });

@@ -16,6 +16,7 @@ export const reverseGeocoding = tool({
     const res = await axios.get(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&addressdetails=1&namedetails=1`
     );
+    console.log('Reverse geocoding tool called');
     return res.data;
   },
 });

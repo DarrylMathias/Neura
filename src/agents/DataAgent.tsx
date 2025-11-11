@@ -1,5 +1,6 @@
 import { geocoding } from "@/tools/geocoding";
 import { googlesearch } from "@/tools/googlesearch";
+import { currentLocation } from "@/tools/location";
 import { nearbyPlaces } from "@/tools/nearbyPlaces";
 import { reverseGeocoding } from "@/tools/reverseGeocoding";
 import { routing } from "@/tools/routing";
@@ -8,6 +9,7 @@ import { trafficIncidentDetails } from "@/tools/trafficIncidentDetails";
 import { weather } from "@/tools/weather";
 import { supermemoryTools } from "@supermemory/tools/ai-sdk";
 import { Experimental_Agent as Agent, stepCountIs } from "ai";
+import "dotenv/config";
 
 export async function createDataAgent(modelWithMemory: any) {
   return new Agent({
@@ -16,7 +18,7 @@ export async function createDataAgent(modelWithMemory: any) {
   You are the Data Agent of the pipeline. Your task is to fetch information based on the Context Agents summed up intent using available tools.
    Follow these rules:
    1. Identify the type of query: 'route', 'place', 'info', or 'other'.
-   2. Call any and all tools you need (routing, weather, traffic, etc.).
+   2. CALL ALL TOOLS you need (routing, weather, traffic, etc.).
    3.  Once all tool calls are complete, DO NOT write a single word of conversational text.
    4.  Your FINAL output MUST be a key-value text block that mirrors the final JSON structure.
    5. Include 'conditions' for runtime/contextual info like weather, alerts, etc.
@@ -179,6 +181,7 @@ export async function createDataAgent(modelWithMemory: any) {
       trafficIncidentDetails,
       weather,
       googlesearch,
+      currentLocation,
       ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
     },
     stopWhen: stepCountIs(15),

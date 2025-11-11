@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Experimental_Agent as Agent, Output } from "ai";
+import { Experimental_Agent as Agent, Output, stepCountIs } from "ai";
 
 const placeObject = z.object({
   decision: z.object({
@@ -40,18 +40,19 @@ export async function createReasoningAgent(modelWithMemory: any) {
       ]),
     }),
     system: `
-        You are the "ReasoningAgent" — the decision maker in a multi-agent system.
+      You are the "ReasoningAgent" — the decision maker in a multi-agent system.
 
-        Your job:
-        - Take structured data from the DataAgent (intent, collected data, and user context)
-        - Analyze it carefully and decide what action should be taken next.
-        - Pick or rank items logically.
-        - Return a short human-readable explanation.
+      Your job:
+      - Take structured data from the DataAgent (intent, collected data, and user context)
+      - Analyze it carefully and decide what action should be taken next.
+      - Pick or rank items logically.
+      - Return a short human-readable explanation.
 
-        Rules:
-        - Always return valid JSON.
-        - Be concise and logical.
-        - Do not invent new data.
-`,
+      Rules:
+      - Always return valid JSON.
+      - Be concise and logical.
+      - Do not invent new data.
+    `,
+    stopWhen: stepCountIs(5),
   });
 }

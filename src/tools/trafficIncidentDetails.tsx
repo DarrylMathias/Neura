@@ -28,6 +28,7 @@ export const trafficIncidentDetails = tool({
       `https://api.tomtom.com/traffic/services/5/incidentDetails?fields={incidents{type,geometry{type,coordinates},properties{iconCategory,magnitudeOfDelay,events{description,iconCategory},startTime,endTime,from,to,length,delay,roadNumbers,timeValidity,probabilityOfOccurrence,numberOfReports,lastReportTime}}}&key=${process.env.TOM_TOM_API_KEY}&bbox=${coord1.lat},${coord1.lng},${coord2.lat},${coord2.lng}&language=en-GB&t=1111&timeValidityFilter=present,future`
     );
     const data = result.data;
+    console.log('Traffic Incident tool called');
     return data;
   },
 });

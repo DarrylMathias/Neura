@@ -13,6 +13,7 @@ export const geocoding = tool({
     const res = await axios.get(
       `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`
     );
+    console.log('Geocoding tool called');
     return res.data;
   },
 });

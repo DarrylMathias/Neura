@@ -2,9 +2,13 @@
 
 import { useRef, useState, useEffect } from "react";
 import ChatBotDemo from "@/components/Chatbot";
-import Map from "@/components/Map";
-import RouteMap from "@/components/RouteMap";
+import dynamic from "next/dynamic";
+const Map = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => <div>Loading map...</div>,
+});
 import axios from "axios";
+import { MapMarker, MapRoute, MapView } from "@/types/map";
 
 const Page = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -14,6 +18,10 @@ const Page = () => {
     latitude: 18.9582,
     longitude: 72.8321,
   });
+
+  const [markers, setMarkers] = useState<MapMarker[]>([]);
+  const [routes, setRoutes] = useState<MapRoute[]>([]);
+  const [mapView, setMapView] = useState<MapView | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +40,6 @@ const Page = () => {
         fetchData();
       }
     );
-    
   }, []);
 
   useEffect(() => {
@@ -76,8 +83,16 @@ const Page = () => {
         style={!isMobile ? { width: `${dividerX}%` } : {}}
       >
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
-          <Map location={location} />
-          {/* <RouteMap /> */}
+          {location.latitude && location.longitude ? (
+            <Map
+              location={location}
+              markers={markers}
+              routes={routes}
+              mapView={mapView}
+            />
+          ) : (
+            <div className="text-white">Loading map...</div>
+          )}
         </div>
       </div>
 
@@ -95,7 +110,12 @@ const Page = () => {
         style={!isMobile ? { width: `${100 - dividerX}%` } : {}}
       >
         <div className="absolute inset-0">
-          <ChatBotDemo location={location} />
+          <ChatBotDemo
+            location={location}
+            onUpdateMarkers={setMarkers}
+            onUpdateRoutes={setRoutes}
+            onSetMapView={setMapView}
+          />
         </div>
       </div>
     </div>

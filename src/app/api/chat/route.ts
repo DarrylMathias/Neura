@@ -15,8 +15,22 @@ import { createReasoningAgent } from "@/agents/ReasoningAgent";
 import { auth } from "@clerk/nextjs/server";
 import { google } from "@ai-sdk/google";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
+import { createActionAgent } from "@/agents/ActionAgent";
 
 export const maxDuration = 30;
+
+interface AgentState {
+  id?: number;
+  orchestrator?: any;
+  context?: any;
+  data?: any;
+  reasoning?: any;
+  action?: any;
+  summary?: string;
+  errors?: string;
+}
+
+const knowledgeBase: AgentState[] = [];
 
 export async function POST(req: Request) {
   const {
@@ -28,16 +42,6 @@ export async function POST(req: Request) {
     model: string;
     location: { latitude: number; longitude: number };
   } = await req.json();
-
-  interface AgentState {
-    orchestrator?: any;
-    context?: any;
-    data?: any;
-    reasoning?: any;
-    action?: any;
-    summary?: string;
-    errors?: string;
-  }
 
   const modalMsgs = convertToModelMessages(messages);
   const lastMessage = modalMsgs.at(-1)?.content?.[0]?.text || "";
@@ -105,16 +109,19 @@ export async function POST(req: Request) {
 
         const agents = state.orchestrator;
 
-        await safeRun("InteractionAgent", async () => {
-          const intAgent = await createInteractionAgent(
-            modelWithMemory,
-            state,
-            location,
-            "plan"
-          );
-          const result = intAgent.stream({ messages: modalMsgs });
-          writer.merge(result.toUIMessageStream());
-        });
+        // Plan : Interaction Agent
+        if (agents?.agentsToUse.length > 0) {
+          await safeRun("InteractionAgent", async () => {
+            const intAgent = await createInteractionAgent(
+              modelWithMemory,
+              state,
+              location,
+              "plan"
+            );
+            const result = intAgent.stream({ messages: modalMsgs });
+            writer.merge(result.toUIMessageStream());
+          });
+        }
 
         // 2: Context Agent
         if (agents?.agentsToUse?.includes("ContextAgent")) {
@@ -203,15 +210,24 @@ export async function POST(req: Request) {
           });
         }
 
-        // 5: Action Agent
+        // Action Agent
         if (agents?.agentsToUse?.includes("ActionAgent")) {
-          // writer.write({
-          //   type: "data-Action",
-          //   data: { agentData: state.action, input: state.context },
-          // });
+          const actionAgent = await createActionAgent(modelWithMemory);
+          await safeRun("ActionAgent", async () => {
+            const result = actionAgent.stream({
+              prompt: `
+                  User request: ${lastMessage}
+                  Full Conversation History:
+                  ${formattedHistory}
+                  Context object: ${JSON.stringify(state)}
+
+                  Select and execute the necessary UI tool calls to update the map and chat for the user.
+                `,
+            });
+            writer.merge(result.toUIMessageStream());
+          });
         }
 
-        // 6: Interaction Agent
         await safeRun("InteractionAgent", async () => {
           const intAgent = await createInteractionAgent(
             modelWithMemory,
@@ -221,6 +237,7 @@ export async function POST(req: Request) {
           const result = intAgent.stream({ messages: modalMsgs });
           writer.merge(result.toUIMessageStream());
         });
+        knowledgeBase.push({ ...state, id: knowledgeBase.length + 1});
       },
     });
 

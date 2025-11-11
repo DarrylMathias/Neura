@@ -18,10 +18,11 @@ export const routing = tool({
         lng: z.number(),
       })
       .describe("The coordinates of the destination"),
+      // overview : z.enum(["full", "simplified", "false"]).optional().default("full").describe("Level of detail in the returned route geometry, WARNING : 'full' may return large payloads, if errors occur try 'simplified' or 'false'"),
   }),
   execute: async ({ modeOfTransportation, coord1, coord2}) => {
     const result = await axios.get(
-      `http://router.project-osrm.org/route/v1/${modeOfTransportation}/${coord1.lng},${coord1.lat};${coord2.lng},${coord2.lat}?geometries=geojson&overview=full&alternatives=3`
+      `http://router.project-osrm.org/route/v1/${modeOfTransportation}/${coord1.lng},${coord1.lat};${coord2.lng},${coord2.lat}?geometries=geojson&overview=simplified&alternatives=3`
     );
     const data = result.data;
     if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {

@@ -1,4 +1,4 @@
-import { Experimental_Agent as Agent, Output } from "ai";
+import { Experimental_Agent as Agent, Output, stepCountIs } from "ai";
 import { z } from "zod";
 
 const allowedAgents = [
@@ -9,9 +9,9 @@ const allowedAgents = [
 ] as const;
 
 export async function createOrchestrator(modelWithMemory: any) {
-return new Agent({
-  model : modelWithMemory,
-  system: `
+  return new Agent({
+    model: modelWithMemory,
+    system: `
       You are the Orchestrator — the orchestrator of the application which is an agentic map.
       Your role is to interpret the user's intent and determine which of the following agents are needed:
       - ContextAgent: understands what the user wants.
@@ -23,18 +23,20 @@ return new Agent({
       Choose agents only if required. For any non navigation purposes, don't use them.
       NOTE : The Data Agent is a resource heavy agent, dont call it unless the purpose of the prompt changes substantially.
       Also call the context agent to understand contexts regarding only the main purpose of the application only.
+      Details about current weather, traffic conditions, and user location also fall under the main purpose of the application.
     `,
-  experimental_output: Output.object({
-    schema: z.object({
-      agentsToUse: z
-        .array(z.enum(allowedAgents))
-        .describe(
-          "List of agents to engage from the core set, in proper order"
-        ),
-      reasoning: z
-        .string()
-        .describe("Explanation of why these agents are needed."),
+    experimental_output: Output.object({
+      schema: z.object({
+        agentsToUse: z
+          .array(z.enum(allowedAgents))
+          .describe(
+            "List of agents to engage from the core set, in proper order"
+          ),
+        reasoning: z
+          .string()
+          .describe("Explanation of why these agents are needed."),
+      }),
     }),
-  }),
-});
+    stopWhen: stepCountIs(5),
+  });
 }

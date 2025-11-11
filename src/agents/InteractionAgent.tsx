@@ -2,6 +2,8 @@ import { Experimental_Agent as Agent, stepCountIs } from "ai";
 import { weather } from "@/tools/weather";
 import { googlesearch } from "@/tools/googlesearch";
 import { supermemoryTools } from "@supermemory/tools/ai-sdk";
+import "dotenv/config";
+import { currentLocation } from "@/tools/location";
 
 interface AgentState {
   context?: any;
@@ -53,6 +55,7 @@ export async function createInteractionAgent(
     tools: {
       weather,
       googlesearch,
+      currentLocation,
       ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
     },
     stopWhen: stepCountIs(10),

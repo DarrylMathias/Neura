@@ -28,7 +28,7 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { Action, Actions } from "@/components/ai-elements/actions";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai-elements/response";
 import { CopyIcon, RefreshCcwIcon, TriangleAlertIcon } from "lucide-react";
@@ -50,6 +50,7 @@ import {
   ToolHeader,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import { MapMarker, MapRoute, MapView } from "@/types/map";
 
 const models = [
   { name: "Gemini 2.5 Flash", value: "gemini-2.5-flash" },
@@ -69,8 +70,14 @@ function safeStringify(v: unknown) {
 
 const ChatBotDemo = ({
   location,
+  onUpdateMarkers,
+  onUpdateRoutes,
+  onSetMapView,
 }: {
   location: { latitude: number; longitude: number };
+  onUpdateMarkers: (markers: MapMarker[]) => void;
+  onUpdateRoutes: (routes: MapRoute[]) => void;
+  onSetMapView: (view: MapView) => void;
 }) => {
   const [input, setInput] = useState("");
   const [model, setModel] = useState<string>(models[0].value);
@@ -117,6 +124,44 @@ const ChatBotDemo = ({
     }
   };
 
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+
+    if (!lastMessage || lastMessage.role !== "assistant") return;
+
+    const toolCalls = lastMessage.parts.filter((part) =>
+      part.type.startsWith("tool-")
+    );
+
+    if (toolCalls.length === 0) return;
+
+    for (const toolCall of toolCalls) {
+      try {
+        switch (toolCall.type) {
+          case "tool-updateMarkers":
+            onUpdateMarkers(toolCall.output?.data || []);
+            break;
+          case "tool-updateRoutes":
+            onUpdateRoutes(toolCall.output?.data || []);
+            break;
+          case "tool-setMapView":
+            onSetMapView(toolCall.output?.data || {});
+            break;
+          default:
+            console.warn("Unknown tool call:", toolCall.type);
+        }
+      } catch (err) {
+        console.error("Failed to process tool call:", toolCall.type, err);
+      }
+    }
+    console.log(toolCalls);
+
+    // This hook runs *only* when the messages array changes.
+    // We disable the eslint rule because we *intentionally*
+    // don't want this to re-run if the prop functions change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
   return (
     <div className="w-full h-full p-4 md:p-6 bg-zinc-950 overflow-hidden">
       <div className="flex flex-col h-full">
@@ -136,9 +181,8 @@ const ChatBotDemo = ({
                     <Sources>
                       <SourcesTrigger
                         count={
-                          message.parts.filter(
-                            (p) => p.type === "source-url"
-                          ).length
+                          message.parts.filter((p) => p.type === "source-url")
+                            .length
                         }
                       />
                       {message.parts
@@ -207,7 +251,6 @@ const ChatBotDemo = ({
                       );
 
                     default:
-                      // handle tools or data
                       if (part.type.startsWith("tool-")) {
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
@@ -258,8 +301,7 @@ const ChatBotDemo = ({
                                   }
                                   errorText={
                                     isError
-                                      ? part.data?.agentData ??
-                                        "Unknown error."
+                                      ? part.data?.agentData ?? "Unknown error."
                                       : part.errorText ?? ""
                                   }
                                 />
@@ -324,10 +366,7 @@ const ChatBotDemo = ({
               </PromptInputSelect>
             </PromptInputTools>
 
-            <PromptInputSubmit
-              disabled={!input && !status}
-              status={status}
-            />
+            <PromptInputSubmit disabled={!input && !status} status={status} />
           </PromptInputFooter>
         </PromptInput>
       </div>
