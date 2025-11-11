@@ -15,7 +15,7 @@ export type MyUIMessage = UIMessage<
     Data?: GenericType;
     Reasoning?: GenericType;
     Action?: any;
-    Error?: string;
+    Error?: GenericType;
     Summary?: string; // <-- Note: Your original type had 'Summary: string', not 'Summary?: string'
   }, // data parts type
 >;

@@ -3,16 +3,18 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  // generateObject,
 } from "ai";
-import { orchestrator } from "@/agents/Orchestrator";
-import { contextAgent } from "@/agents/ContextAgent";
+import { createOrchestrator } from "@/agents/Orchestrator";
+import { createContextAgent } from "@/agents/ContextAgent";
 import { createInteractionAgent } from "@/agents/InteractionAgent";
 import { MyUIMessage } from "@/types/types";
-import { dataAgent } from "@/agents/DataAgent";
+import { createDataAgent } from "@/agents/DataAgent";
 import { jsonAgent } from "@/agents/JSONAgent";
 import { dataAgentSchema } from "@/agents/schemas/dataAgentSchema";
-import { ReasoningAgent } from "@/agents/ReasoningAgent";
+import { createReasoningAgent } from "@/agents/ReasoningAgent";
+import { auth } from "@clerk/nextjs/server";
+import { google } from "@ai-sdk/google";
+import { withSupermemory } from "@supermemory/tools/ai-sdk";
 
 export const maxDuration = 30;
 
@@ -34,10 +36,11 @@ export async function POST(req: Request) {
     reasoning?: any;
     action?: any;
     summary?: string;
+    errors?: string;
   }
 
   const modalMsgs = convertToModelMessages(messages);
-  const lastMessage = modalMsgs[modalMsgs.length - 1]?.content?.[0]?.text || "";
+  const lastMessage = modalMsgs.at(-1)?.content?.[0]?.text || "";
   const formattedHistory = modalMsgs
     .map((msg) => {
       const content = Array.isArray(msg.content)
@@ -48,11 +51,37 @@ export async function POST(req: Request) {
     .join("\n");
 
   try {
+    const { isAuthenticated, redirectToSignIn, userId } = await auth();
+    let modelWithMemory = google("gemini-2.5-flash");
+    if (!isAuthenticated) {
+      redirectToSignIn();
+    } else {
+      modelWithMemory = withSupermemory(google("gemini-2.5-flash"), userId);
+    }
+
     const stream = createUIMessageStream<MyUIMessage>({
       execute: async ({ writer }) => {
         const state: AgentState = {};
-        try {
-          // Orchestrator
+
+        const safeRun = async (name: string, fn: () => Promise<void>) => {
+          try {
+            await fn();
+          } catch (err) {
+            if (name === "Orchestrator") throw err;
+            console.error(`[${name}] Error:`, err);
+            const msg =
+              err instanceof Error ? err.message : JSON.stringify(err);
+            writer.write({
+              type: "data-Error",
+              data: { agentData: `[${name}] failed:\n\n ${msg}` },
+            });
+            state.errors = `[${name}] failed:\n\n ${msg}`;
+          }
+        };
+
+        // 1: Orchestrator
+        await safeRun("Orchestrator", async () => {
+          const orchestrator = await createOrchestrator(modelWithMemory);
           const { experimental_output: agents } = await orchestrator.generate({
             prompt: `
               User Request: ${lastMessage}
@@ -65,134 +94,149 @@ export async function POST(req: Request) {
             `,
           });
           state.orchestrator = agents;
-          console.log(agents);
+          writer.write({
+            type: "data-Orchestrator",
+            data: {
+              agentData: state.orchestrator,
+              input: { query: lastMessage },
+            },
+          });
+        });
 
-          if (state.orchestrator)
-            writer.write({
-              type: "data-Orchestrator",
-              data: {
-                agentData: state.orchestrator,
-                input: {
-                  query: lastMessage,
-                },
-              },
-            });
+        const agents = state.orchestrator;
 
-          // Context Agent
-          if (agents.agentsToUse.includes("ContextAgent")) {
+        await safeRun("InteractionAgent", async () => {
+          const intAgent = await createInteractionAgent(
+            modelWithMemory,
+            state,
+            location,
+            "plan"
+          );
+          const result = intAgent.stream({ messages: modalMsgs });
+          writer.merge(result.toUIMessageStream());
+        });
+
+        // 2: Context Agent
+        if (agents?.agentsToUse?.includes("ContextAgent")) {
+          await safeRun("ContextAgent", async () => {
+            const contextAgent = await createContextAgent(modelWithMemory);
             const { experimental_output: context } =
               await contextAgent.generate({
                 prompt: `
                   User request: ${lastMessage}
                   Full Conversation History:
                   ${formattedHistory}
-                  Location : ${JSON.stringify(location)}
+                  Location: ${JSON.stringify(location)}
 
                   Parse the user's message into a structured intent object.
                   Identify their goal, extract parameters, and list any required data.
                 `,
               });
+
             state.context = context;
-            console.log(context);
-
-            if (state.context)
-              writer.write({
-                type: "data-Context",
-                data: {
-                  agentData: state.context,
-                  input: state.orchestrator,
-                },
-              });
-          }
-
-          // Data Agent
-          if (agents.agentsToUse.includes("DataAgent")) {
-          }
-          const result = await dataAgent.generate({
-            prompt: `
-              Context object  : ${JSON.stringify(state)}
-              Extract all the relevant user data as per the intent object provided
-            `,
+            writer.write({
+              type: "data-Context",
+              data: { agentData: state.context, input: state.orchestrator },
+            });
           });
-
-          const dataObjectAgent = await jsonAgent(dataAgentSchema);
-          const { experimental_output: data } = await dataObjectAgent.generate({
-            prompt: `
-              Take the following raw data summary and parse it into the
-              required JSON schema. Be extremely accurate.
-
-              Raw Data:
-              ${
-                result.content
-                  ? typeof result.content === "string"
-                    ? result.content
-                    : JSON.stringify(result.content)
-                  : "No data available"
-              }
-            `,
-          });
-          state.data = data;
-          console.log(data);
-
-          if (state.data)
-            writer.write({
-              type: "data-Data",
-              data: {
-                agentData: state.data,
-                input: state.context,
-              },
-            });
-
-          // Reasoning Agent
-          if (agents.agentsToUse.includes("ReasoningAgent")) {
-            const { experimental_output: reasoning } =
-              await ReasoningAgent.generate({
-                prompt: `
-                  Context object  : ${JSON.stringify(state)}
-
-                  Reason on what options to select from the intent of the user and what seems to be the best choice for the user
-                `,
-              });
-            state.reasoning = reasoning;
-            console.log(reasoning);
-          }
-
-          if (state.reasoning)
-            writer.write({
-              type: "data-Reasoning",
-              data: {
-                agentData: state.reasoning,
-                input: state.context,
-              },
-            });
-
-          // Action agent
-          if (agents.agentsToUse.includes("ActionAgent")) {
-          }
-          if (state.action)
-            writer.write({
-              type: "data-Action",
-              data: {
-                agentData: state.action,
-                input: state.context,
-              },
-            });
-        } catch (error) {
-          console.log(error);
         }
 
-        const intAgent = await createInteractionAgent(model, state, location);
-        const result = intAgent.stream({ messages: modalMsgs });
-        writer.merge(result.toUIMessageStream());
+        // \3: Data Agent
+        if (agents?.agentsToUse?.includes("DataAgent")) {
+          await safeRun("DataAgent", async () => {
+            const dataAgent = await createDataAgent(modelWithMemory);
+            const result = await dataAgent.generate({
+              prompt: `
+                User request: ${lastMessage}
+                Full Conversation History:
+                ${formattedHistory}
+                Context object: ${JSON.stringify(state)}
+                Extract all relevant user data as per the intent object.
+              `,
+            });
+
+            const dataObjectAgent = await jsonAgent(dataAgentSchema);
+            const { experimental_output: data } =
+              await dataObjectAgent.generate({
+                prompt: `
+                  Take the following raw data summary and parse it into the
+                  required JSON schema accurately.
+
+                  Raw Data:
+                  ${
+                    typeof result.content === "string"
+                      ? result.content
+                      : JSON.stringify(result.content)
+                  }
+                `,
+              });
+
+            state.data = data;
+            writer.write({
+              type: "data-Data",
+              data: { agentData: state.data, input: state.context },
+            });
+          });
+        }
+
+        // 4: Reasoning Agent
+        if (agents?.agentsToUse?.includes("ReasoningAgent")) {
+          const reasoningAgent = await createReasoningAgent(modelWithMemory);
+          await safeRun("ReasoningAgent", async () => {
+            const { experimental_output: reasoning } =
+              await reasoningAgent.generate({
+                prompt: `
+                  User request: ${lastMessage}
+                  Full Conversation History:
+                  ${formattedHistory}
+                  Context object: ${JSON.stringify(state)}
+
+                  Reason on what options to select from the intent of the user and what seems best for the user.
+                `,
+              });
+
+            state.reasoning = reasoning;
+            writer.write({
+              type: "data-Reasoning",
+              data: { agentData: state.reasoning, input: state.context },
+            });
+          });
+        }
+
+        // 5: Action Agent
+        if (agents?.agentsToUse?.includes("ActionAgent")) {
+          // writer.write({
+          //   type: "data-Action",
+          //   data: { agentData: state.action, input: state.context },
+          // });
+        }
+
+        // 6: Interaction Agent
+        await safeRun("InteractionAgent", async () => {
+          const intAgent = await createInteractionAgent(
+            modelWithMemory,
+            state,
+            location
+          );
+          const result = intAgent.stream({ messages: modalMsgs });
+          writer.merge(result.toUIMessageStream());
+        });
       },
     });
+
     return createUIMessageStreamResponse({ stream });
   } catch (err) {
-    console.error("/api/chat error:", err);
+    console.error("/api/chat FATAL error:", err);
     const stream = createUIMessageStream<MyUIMessage>({
       execute: async ({ writer }) => {
-        const text = err instanceof Error ? err.message : String(err);
-        writer.write({ type: "data-Error", data: `Error: ${text}` });
+        writer.write({
+          type: "data-Error",
+          data: {
+            agentData:
+              "A fatal server error occurred while processing your request.",
+            input: err instanceof Error ? err.message : String(err),
+          },
+        });
       },
     });
     return createUIMessageStreamResponse({ stream });

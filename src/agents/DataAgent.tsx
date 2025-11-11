@@ -1,16 +1,18 @@
 import { geocoding } from "@/tools/geocoding";
+import { googlesearch } from "@/tools/googlesearch";
 import { nearbyPlaces } from "@/tools/nearbyPlaces";
 import { reverseGeocoding } from "@/tools/reverseGeocoding";
 import { routing } from "@/tools/routing";
 import { trafficFlow } from "@/tools/trafficFlow";
 import { trafficIncidentDetails } from "@/tools/trafficIncidentDetails";
 import { weather } from "@/tools/weather";
-import { google } from "@ai-sdk/google";
+import { supermemoryTools } from "@supermemory/tools/ai-sdk";
 import { Experimental_Agent as Agent, stepCountIs } from "ai";
 
-export const dataAgent = new Agent({
-  model: google("gemini-2.5-flash"),
-  system: `
+export async function createDataAgent(modelWithMemory: any) {
+  return new Agent({
+    model: modelWithMemory,
+    system: `
   You are the Data Agent of the pipeline. Your task is to fetch information based on the Context Agents summed up intent using available tools.
    Follow these rules:
    1. Identify the type of query: 'route', 'place', 'info', or 'other'.
@@ -20,9 +22,13 @@ export const dataAgent = new Agent({
    5. Include 'conditions' for runtime/contextual info like weather, alerts, etc.
    6. Include 'meta' for metadata: sources, timestamp, etc.
    7. Include a 'reasoning' explaining how type and data were determined.
-   DO NOT output JSON.
 
   DO NOT use JSON markdown (\`\`\`json). Just output the raw text.
+
+  You have access to Supermemory tools (searchMemories, addMemory).
+  When you fetch new structured data, always call 'addMemory' to remember it with the context type (e.g., 'route', 'place', or 'info').
+  If you need to check whether similar data already exists, use 'searchMemories'.
+
 
     ----
   GOOD OUTPUT EXAMPLE (ROUTE):
@@ -164,14 +170,17 @@ export const dataAgent = new Agent({
   reasoning: "Could not fulfill request due to tool errors or query ambiguity. Returning raw logs."
   ----
   `,
-  tools: {
-    geocoding,
-    nearbyPlaces,
-    reverseGeocoding,
-    routing,
-    trafficFlow,
-    trafficIncidentDetails,
-    weather,
-  },
-  stopWhen: stepCountIs(15),
-});
+    tools: {
+      geocoding,
+      nearbyPlaces,
+      reverseGeocoding,
+      routing,
+      trafficFlow,
+      trafficIncidentDetails,
+      weather,
+      googlesearch,
+      ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
+    },
+    stopWhen: stepCountIs(15),
+  });
+}

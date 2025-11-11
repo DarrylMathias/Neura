@@ -1,4 +1,3 @@
-import { google } from "@ai-sdk/google";
 import { Experimental_Agent as Agent, Output } from "ai";
 import { z } from "zod";
 
@@ -9,19 +8,21 @@ const allowedAgents = [
   "ActionAgent",
 ] as const;
 
-export const orchestrator = new Agent({
-  model: google("gemini-2.5-flash"),
+export async function createOrchestrator(modelWithMemory: any) {
+return new Agent({
+  model : modelWithMemory,
   system: `
       You are the Orchestrator — the orchestrator of the application which is an agentic map.
       Your role is to interpret the user's intent and determine which of the following agents are needed:
       - ContextAgent: understands what the user wants.
       - DataAgent: gathers relevant real-time data.
       - ReasoningAgent: analyzes all data and decides the best route.
-      - ActionAgent: executes the plan (renders map).
+      - ActionAgent: executes the plan (renders map). 
 
       Only choose from these agents. Do not invent new ones.
       Choose agents only if required. For any non navigation purposes, don't use them.
-      Also call the context agent to understand contexts regarding the main purpose of the application only.
+      NOTE : The Data Agent is a resource heavy agent, dont call it unless the purpose of the prompt changes substantially.
+      Also call the context agent to understand contexts regarding only the main purpose of the application only.
     `,
   experimental_output: Output.object({
     schema: z.object({
@@ -36,3 +37,4 @@ export const orchestrator = new Agent({
     }),
   }),
 });
+}

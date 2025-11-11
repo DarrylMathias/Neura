@@ -31,7 +31,7 @@ import { Action, Actions } from "@/components/ai-elements/actions";
 import { Fragment, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai-elements/response";
-import { CopyIcon, RefreshCcwIcon } from "lucide-react";
+import { CopyIcon, RefreshCcwIcon, TriangleAlertIcon } from "lucide-react";
 import {
   Source,
   Sources,
@@ -48,7 +48,6 @@ import {
   Tool,
   ToolContent,
   ToolHeader,
-  ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
 
@@ -57,6 +56,17 @@ const models = [
   { name: "Gemini 2.5 Pro", value: "gemini-2.5-pro" },
 ];
 
+function safeStringify(v: unknown) {
+  try {
+    if (v === undefined) return "undefined";
+    if (v === null) return "null";
+    if (typeof v === "string") return v;
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
+}
+
 const ChatBotDemo = ({
   location,
 }: {
@@ -64,63 +74,97 @@ const ChatBotDemo = ({
 }) => {
   const [input, setInput] = useState("");
   const [model, setModel] = useState<string>(models[0].value);
+  const [error, setError] = useState<string | null>(null);
   const { messages, sendMessage, status, regenerate } = useChat();
 
-  const handleSubmit = (message: PromptInputMessage) => {
-    const hasText = Boolean(message.text);
+  const handleSubmit = async (message: PromptInputMessage) => {
+    setError(null);
+    const hasText = Boolean(message.text?.trim());
     const hasAttachments = Boolean(message.files?.length);
-
     if (!(hasText || hasAttachments)) return;
 
-    sendMessage(
-      {
-        text: message.text || "Sent with attachments",
-        files: message.files,
-      },
-      { body: { model, location } }
-    );
+    try {
+      await sendMessage(
+        {
+          text: message.text || "Sent with attachments",
+          files: message.files,
+        },
+        { body: { model, location } }
+      );
+      setInput("");
+      if (message.files) message.files.length = 0;
+    } catch (err) {
+      console.error(err);
+      setError("Failed to send message. Please try again.");
+    }
+  };
 
-    setInput("");
-    if (message.files) message.files.length = 0; // clear attachments
+  const handleRetry = async () => {
+    setError(null);
+    try {
+      await regenerate();
+    } catch (err) {
+      console.error(err);
+      setError("Regeneration failed. Please retry later.");
+    }
+  };
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      setError("Could not copy text to clipboard.");
+    }
   };
 
   return (
     <div className="w-full h-full p-4 md:p-6 bg-zinc-950 overflow-hidden">
       <div className="flex flex-col h-full">
+        {error && (
+          <div className="bg-red-600/10 border border-red-600 text-red-400 p-2 mb-2 rounded-md text-sm flex items-center gap-2">
+            <TriangleAlertIcon className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+
         <Conversation className="h-full">
-          <ConversationContent className="overflow-y-auto max-h-[70vh] md:max-h-none">
+          <ConversationContent className="max-h-[70vh] md:max-h-none">
             {messages.map((message, messageIndex) => (
               <div key={message.id}>
                 {message.role === "assistant" &&
-                  message.parts.filter((p) => p.type === "source-url").length >
-                    0 && (
+                  message.parts?.some((p) => p.type === "source-url") && (
                     <Sources>
                       <SourcesTrigger
                         count={
-                          message.parts.filter((p) => p.type === "source-url")
-                            .length
+                          message.parts.filter(
+                            (p) => p.type === "source-url"
+                          ).length
                         }
                       />
                       {message.parts
                         .filter((p) => p.type === "source-url")
                         .map((part, i) => (
                           <SourcesContent key={`${message.id}-${i}`}>
-                            <Source href={part.url} title={part.url} />
+                            <Source
+                              href={part.url ?? "#"}
+                              title={part.url ?? "Unknown source"}
+                            />
                           </SourcesContent>
                         ))}
                     </Sources>
                   )}
 
-                {message.parts.map((part, i) => {
-                  console.log(part);
+                {message.parts?.map((part, i) => {
+                  if (!part || !part.type) return null;
+
                   switch (part.type) {
                     case "text":
                       return (
                         <Fragment key={`${message.id}-${i}`}>
                           <Message from={message.role}>
                             <MessageContent>
-                              <Response className="break-words whitespace-pre-wrap">
-                                {part.text}
+                              <Response className="wrap-break-word whitespace-pre-wrap">
+                                {part.text ?? ""}
                               </Response>
                             </MessageContent>
                           </Message>
@@ -128,15 +172,12 @@ const ChatBotDemo = ({
                           {message.role === "assistant" &&
                             i === message.parts.length - 1 && (
                               <Actions className="mt-2">
-                                <Action
-                                  onClick={() => regenerate()}
-                                  label="Retry"
-                                >
+                                <Action onClick={handleRetry} label="Retry">
                                   <RefreshCcwIcon className="size-3" />
                                 </Action>
                                 <Action
                                   onClick={() =>
-                                    navigator.clipboard.writeText(part.text)
+                                    handleCopy(part.text ?? "(no text)")
                                   }
                                   label="Copy"
                                 >
@@ -159,27 +200,30 @@ const ChatBotDemo = ({
                           }
                         >
                           <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
+                          <ReasoningContent>
+                            {part.text ?? "No reasoning text."}
+                          </ReasoningContent>
                         </Reasoning>
                       );
 
                     default:
-                      if (part.type?.startsWith("tool-")) {
+                      // handle tools or data
+                      if (part.type.startsWith("tool-")) {
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
-                            <ToolHeader type={part.type} state={part.state} />
+                            <ToolHeader
+                              type={part.type}
+                              state={part.state ?? "output-available"}
+                            />
                             <ToolContent>
-                              <pre>
-                                <ToolInput input={part.input} />
+                              <pre className="wrap-break-word whitespace-pre-wrap">
                                 <ToolOutput
                                   output={
                                     part.output
-                                      ? typeof part.output === "string"
-                                        ? part.output
-                                        : JSON.stringify(part.output, null, 2)
+                                      ? safeStringify(part.output)
                                       : "No data available."
                                   }
-                                  errorText={part.errorText}
+                                  errorText={part.errorText ?? ""}
                                   type="tool"
                                 />
                               </pre>
@@ -189,49 +233,36 @@ const ChatBotDemo = ({
                       }
 
                       if (
-                        part.type?.startsWith("data-") &&
-                        messageIndex == messages.length - 1
+                        part.type.startsWith("data-") &&
+                        messageIndex === messages.length - 1
                       ) {
-                        console.log(part.type);
+                        const isError = part.type === "data-Error";
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
                             <ToolHeader
                               type={part.type}
                               state={
-                                part.type === "data-Error"
-                                  ? "output-error"
-                                  : "output-available"
+                                isError ? "output-error" : "output-available"
                               }
                             />
                             <ToolContent>
-                              <pre>
-                                {part.type !== "data-Error" && (
-                                  <ToolInput input={part.data.input} />
-                                )}
-                                {part.type !== "data-Error" ? (
-                                  <ToolOutput
-                                    output={
-                                      part.data.agentData
-                                        ? typeof part.data.agentData ===
-                                          "string"
-                                          ? part.data.agentData
-                                          : JSON.stringify(
-                                              part.data.agentData,
-                                              null,
-                                              2
-                                            )
-                                        : "No data available."
-                                    }
-                                    errorText={part.errorText}
-                                    type="data"
-                                  />
-                                ) : (
-                                  <ToolOutput
-                                    output=""
-                                    errorText={part.data.agentData}
-                                    type="data"
-                                  />
-                                )}
+                              <pre className="wrap-break-word whitespace-pre-wrap">
+                                <ToolOutput
+                                  output={
+                                    isError
+                                      ? ""
+                                      : safeStringify(
+                                          part.data?.agentData ??
+                                            "No agent data."
+                                        )
+                                  }
+                                  errorText={
+                                    isError
+                                      ? part.data?.agentData ??
+                                        "Unknown error."
+                                      : part.errorText ?? ""
+                                  }
+                                />
                               </pre>
                             </ToolContent>
                           </Tool>
@@ -243,7 +274,7 @@ const ChatBotDemo = ({
                 })}
               </div>
             ))}
-            {status === "submitted" && <Loader />}
+            {(status === "submitted" || status === "streaming") && <Loader />}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
@@ -293,7 +324,10 @@ const ChatBotDemo = ({
               </PromptInputSelect>
             </PromptInputTools>
 
-            <PromptInputSubmit disabled={!input && !status} status={status} />
+            <PromptInputSubmit
+              disabled={!input && !status}
+              status={status}
+            />
           </PromptInputFooter>
         </PromptInput>
       </div>

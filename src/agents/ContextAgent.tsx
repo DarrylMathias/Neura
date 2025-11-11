@@ -1,9 +1,9 @@
-import { google } from "@ai-sdk/google";
 import { Experimental_Agent as Agent, Output } from "ai";
 import { z } from "zod";
 
-export const contextAgent = new Agent({
-  model: google("gemini-2.5-flash"),
+export async function createContextAgent(modelWithMemory: any) {    
+return new Agent({
+  model: modelWithMemory,
   system: `
   You are the ContextAgent — the orchestrator of the AI system.
 
@@ -84,3 +84,4 @@ export const contextAgent = new Agent({
     }),
   }),
 });
+}
