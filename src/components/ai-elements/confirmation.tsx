@@ -39,9 +39,15 @@ type ToolUIPartApproval =
     }
   | undefined;
 
+type ConfirmationState =
+  | ToolUIPart["state"]
+  | "approval-requested"
+  | "approval-responded"
+  | "output-denied";
+
 type ConfirmationContextValue = {
   approval: ToolUIPartApproval;
-  state: ToolUIPart["state"];
+  state: ConfirmationState;
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
@@ -52,10 +58,10 @@ const useConfirmation = () => {
   const context = useContext(ConfirmationContext);
 
   if (!context) {
-    throw new Error("Confirmation components must be used within Confirmation");
-  }
-
-  return context;
+export type ConfirmationProps = ComponentProps<typeof Alert> & {
+  approval?: ToolUIPartApproval;
+  state: ConfirmationState;
+};
 };
 
 export type ConfirmationProps = ComponentProps<typeof Alert> & {

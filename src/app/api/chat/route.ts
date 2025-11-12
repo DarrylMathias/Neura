@@ -85,7 +85,6 @@ export async function POST(req: Request) {
     } else {
       modelWithMemory = withSupermemory(google("gemini-2.5-flash"), userId, {
         mode: "full",
-        verbose : true
       });
     }
 
@@ -250,6 +249,16 @@ export async function POST(req: Request) {
             writer.merge(result.toUIMessageStream());
           });
         }
+
+        await safeRun("InteractionAgent", async () => {
+          const intAgent = await createInteractionAgent(
+            modelWithMemory,
+            state,
+            location,
+          );
+          const result = intAgent.stream({ messages: modalMsgs });
+          writer.merge(result.toUIMessageStream());
+        });
       },
     });
 

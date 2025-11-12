@@ -32,30 +32,28 @@ export const createActionAgent = async (modelWithMemory: any) => {
 
     **Example 1: Route Data**
     *Previous Step Data:* \`type: route, data: { "type": "route", "routes": [...], "markers": [...], "mapView": {...} }\`
-    *Your Job (3 tool calls + 1 message):*
+    *Your Job (3 tool calls):*
         1. Call \`updateRoutes\` with the \`data.routes\` array.
         2. Call \`updateMarkers\` with the \`data.markers\` array.
         3. Call \`setMapView\` with the \`data.mapView\` object.
-        4. Send chat message: "Okay, I've found 3 routes for you and marked the traffic incidents."
 
     **Example 2: Place Data**
     *Previous Step Data:* \`type: place, data: { "type": "place", "markers": [...], "mapView": {...} }\`
-    *Your Job (2 tool calls + 1 message):*
+    *Your Job (2 tool calls):*
         1. Call \`updateMarkers\` with the \`data.markers\` array.
         2. Call \`setMapView\` with the \`data.mapView\` object.
-        3. Send chat message: "I've found 12 coffee shops near you."
     
     **Example 3: Info Data**
     *Previous Step Data:* \`type: info, data: { "type": "info", "markers": [...], "mapView": {...}, "conditions": {...} }\`
-    *Your Job (2 tool calls + 1 message):*
+    *Your Job (2 tool calls):*
         1. Call \`updateMarkers\` with the \`data.markers\` array (it will just be one marker).
         2. Call \`setMapView\` with the \`data.mapView\` object.
-        3. Send chat message: "Okay, the weather in Pune is 28°C and clear."
 
     **Example 4: Error**
     *Previous Step Data:* \`type: other, data: { "error": "Could not find location" }\`
-    *Your Job (0 tool calls + 1 message):*
-        1. Send chat message: "Sorry, I couldn't find that location. Please try being more specific."
+    *Your Job (0 tool calls):*
+
+    DO NOT GENERATE ANY USER FACING RESPONSE AT ALL COSTS. JUST CALL THE TOOLS AND EXIT.
     `,
     tools: {
       updateMarkers,

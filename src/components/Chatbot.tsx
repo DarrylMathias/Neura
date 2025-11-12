@@ -177,7 +177,7 @@ const ChatBotDemo = ({
           </div>
         )}
 
-        <Conversation className="h-full">
+        <Conversation className="flex-1 min-h-0">
           <ConversationContent className="max-h-[70vh] md:max-h-none">
             {messages.map((message, messageIndex) => (
               <div key={message.id}>

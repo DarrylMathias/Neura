@@ -1,5 +1,4 @@
 "use client";
-
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -17,6 +16,7 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
+
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";

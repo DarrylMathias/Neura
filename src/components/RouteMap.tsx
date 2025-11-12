@@ -19,8 +19,8 @@ const RouteMap = () => {
     script.src = `https://apis.mappls.com/advancedmaps/api/${process.env.NEXT_PUBLIC_MAPPLS_API_KEY}/map_sdk?v=3.0&layer=vector`;
     script.async = true;
     script.onload = () => {
-      if (window.mappls) {
-        const mapObject = new window.mappls.Map(mapRef.current, {
+      if ((window as any).mappls) {
+        const mapObject = new (window as any).mappls.Map(mapRef.current, {
           center: [19.08, 72.88],
           zoom: 12,
           traffic: false,
@@ -70,7 +70,7 @@ const RouteMap = () => {
     console.log(route);
 
     // Draw the polyline
-    const polyline = new window.mappls.Polyline({
+    const polyline = new (window as any).mappls.Polyline({
       map,
       path: route,
       strokeColor: "#FF5733",
@@ -84,7 +84,7 @@ const RouteMap = () => {
     });
 
     // Add the person marker
-    new window.mappls.Marker({
+    new (window as any).mappls.Marker({
       map,
       position: route[route.length - 1],
       icon: "https://cdn-icons-png.flaticon.com/512/64/64572.png",

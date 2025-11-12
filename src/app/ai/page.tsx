@@ -109,7 +109,7 @@ const Page = () => {
         } border-t md:border-t-0 md:border-l border-zinc-800 transition-all duration-300 ease-in-out`}
         style={!isMobile ? { width: `${100 - dividerX}%` } : {}}
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 overflow-y-auto">
           <ChatBotDemo
             location={location}
             onUpdateMarkers={setMarkers}
