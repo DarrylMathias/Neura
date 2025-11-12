@@ -12,6 +12,8 @@ export const setMapView = tool({
   }),
   execute: async ({ center, zoom, animate }) => {
     // Pass the view data to the client
+    console.log("TOOL : setMapView");
+
     return {
       tool: "setMapView",
       status: "success",

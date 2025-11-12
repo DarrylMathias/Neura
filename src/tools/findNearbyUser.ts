@@ -16,7 +16,7 @@ export const findNearbyUser = tool({
     radius: z
       .number()
       .min(1000)
-      .max(50000) 
+      .max(50000)
       .default(5000)
       .describe("The radius to search in meters. Default is 5000m."),
   }),
@@ -28,13 +28,16 @@ export const findNearbyUser = tool({
     try {
       const res = await axios.get("https://ipapi.co/json/");
       const data = res.data;
-      userLocationInfo = { city: data.city, region: data.region, country: data.country_name };
+      userLocationInfo = {
+        city: data.city,
+        region: data.region,
+        country: data.country_name,
+      };
       userCoords = { lat: data.latitude, lng: data.longitude };
-      
+
       if (!userCoords.lat || !userCoords.lng) {
-         throw new Error("Could not determine latitude/longitude from IP.");
+        throw new Error("Could not determine latitude/longitude from IP.");
       }
-      
     } catch (error) {
       console.error("Failed to get user's IP-based location:", error.message);
       return { error: "Could not determine user's current location." };
@@ -51,14 +54,14 @@ export const findNearbyUser = tool({
         }&lon=${userCoords.lng}&radius=${radius}`
       );
       const data = result.data;
-      
+      console.log("TOOL : findNearbyUser");
+
       return {
         searchedLocation: userLocationInfo,
         searchQuery: query,
         radiusInMeters: radius,
         foundPlaces: data.results,
       };
-
     } catch (error) {
       console.error("Failed to get nearby places:", error.message);
       return { error: `Failed to find '${query}' near you.` };

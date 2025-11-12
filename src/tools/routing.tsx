@@ -40,6 +40,8 @@ export const routing = tool({
         lat: coord[1],
         lng: coord[0],
       }));
+      console.log("TOOL : routing");
+
       return {
         path,
         distance,

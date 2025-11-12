@@ -2,7 +2,7 @@
 import { setMapView } from "@/tools/setMapView";
 import { updateMarkers } from "@/tools/updateMarkers";
 import { updateRoutes } from "@/tools/updateRoutes";
-import { searchMemoriesTool } from "@supermemory/tools/ai-sdk";
+import { supermemoryTools } from "@supermemory/tools/ai-sdk";
 import { Experimental_Agent as Agent, stepCountIs } from "ai";
 import "dotenv/config";
 
@@ -26,40 +26,42 @@ export const createActionAgent = async (modelWithMemory: any) => {
     - **IF \`data.mapView\` exists:** Call \`setMapView(data.mapView)\`.
     - You can and should call all 3 tools if the data is present.
     
-    - Finally, generate a single, user-facing chat message explaining what you did.
+    - Finally, generate a single, as small as a phrase user-facing chat message.
 
     --- EXAMPLES ---
 
     **Example 1: Route Data**
     *Previous Step Data:* \`type: route, data: { "type": "route", "routes": [...], "markers": [...], "mapView": {...} }\`
-    *Your Job (3 tool calls):*
+    *Your Job (3 tool calls + 1 message):*
         1. Call \`updateRoutes\` with the \`data.routes\` array.
         2. Call \`updateMarkers\` with the \`data.markers\` array.
         3. Call \`setMapView\` with the \`data.mapView\` object.
+        4. Send chat message: "Okay, I've found 3 routes for you and marked the traffic incidents."
 
     **Example 2: Place Data**
     *Previous Step Data:* \`type: place, data: { "type": "place", "markers": [...], "mapView": {...} }\`
-    *Your Job (2 tool calls):*
+    *Your Job (2 tool calls + 1 message):*
         1. Call \`updateMarkers\` with the \`data.markers\` array.
         2. Call \`setMapView\` with the \`data.mapView\` object.
+        3. Send chat message: "I've found 12 coffee shops near you."
     
     **Example 3: Info Data**
     *Previous Step Data:* \`type: info, data: { "type": "info", "markers": [...], "mapView": {...}, "conditions": {...} }\`
-    *Your Job (2 tool calls):*
+    *Your Job (2 tool calls + 1 message):*
         1. Call \`updateMarkers\` with the \`data.markers\` array (it will just be one marker).
         2. Call \`setMapView\` with the \`data.mapView\` object.
+        3. Send chat message: "Okay, the weather in Pune is 28°C and clear."
 
     **Example 4: Error**
     *Previous Step Data:* \`type: other, data: { "error": "Could not find location" }\`
-    *Your Job (0 tool calls):*
-
-    DO NOT GENERATE ANY USER FACING RESPONSE AT ALL COSTS. JUST CALL THE TOOLS AND EXIT.
+    *Your Job (0 tool calls + 1 message):*
+        1. Send chat message: "Sorry, I couldn't find that location. Please try being more specific."
     `,
     tools: {
       updateMarkers,
       updateRoutes,
       setMapView,
-      ...(searchMemoriesTool(process.env.SUPERMEMORY_API_KEY!) as any),
+      ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
     },
     stopWhen: stepCountIs(5),
   });

@@ -254,7 +254,7 @@ export async function POST(req: Request) {
           const intAgent = await createInteractionAgent(
             modelWithMemory,
             state,
-            location,
+            location
           );
           const result = intAgent.stream({ messages: modalMsgs });
           writer.merge(result.toUIMessageStream());

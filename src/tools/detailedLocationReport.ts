@@ -13,11 +13,11 @@ export const getDetailedLocationReport = tool({
       .string()
       .describe("The name of the place, e.g., 'Pune' or 'Eiffel Tower'"),
     zoom: z
-          .number()
-          .min(0)
-          .max(22)
-          .default(12)
-          .describe("Zoom factor, default is 12"),
+      .number()
+      .min(0)
+      .max(22)
+      .default(12)
+      .describe("Zoom factor, default is 12"),
   }),
   execute: async ({ location, zoom }) => {
     try {
@@ -76,7 +76,7 @@ export const getDetailedLocationReport = tool({
         weatherPromise,
         trafficPromise,
       ]);
-
+      console.log("TOOL : detailedLocationReport");
       return {
         locationName: location,
         coordinates: coords,

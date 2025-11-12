@@ -11,6 +11,8 @@ export const currentLocation = tool({
       const data = await res.data;
       console.log("Location tool called");
       const { city, region, country_name } = data;
+      console.log("TOOL : location");
+
       return { city, region, country: country_name };
     } catch (error) {
       return { city: "Unknown", region: "Unknown", country: "Unknown" };

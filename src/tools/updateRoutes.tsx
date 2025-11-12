@@ -42,6 +42,8 @@ export const updateRoutes = tool({
       const duration = route.duration;
 
       const path = coords.map((coord: number[]) => [coord[1], coord[0]]);
+      console.log("TOOL : updateRoutes");
+
       return {
         id: id,
         polyline: path,

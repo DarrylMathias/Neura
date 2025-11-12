@@ -12,6 +12,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 // Assuming you have this component, left it as is.
 import { AuroraText } from "@/components/ui/aurora-text";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +48,7 @@ export default function RootLayout({
           >
             <header className="flex justify-between items-center p-4 h-16 mx-3">
               <h1 className="text-2xl font-bold">
-                <AuroraText>NEURA</AuroraText>
+                <AuroraText><Link href='/'>NEURA</Link></AuroraText>
               </h1>
               <div className="flex items-center gap-4">
                 <SignedOut>

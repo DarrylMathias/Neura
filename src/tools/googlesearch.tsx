@@ -12,6 +12,8 @@ export const googlesearch = tool({
     const googleCustomSearch = new GoogleCustomSearchClient();
     console.log('Google search tool called');
     const results = await googleCustomSearch.search(query);
+    console.log("TOOL : googlesearch");
+
     return results;
   },
 });

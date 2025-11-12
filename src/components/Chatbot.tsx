@@ -51,6 +51,7 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { MapMarker, MapRoute, MapView } from "@/types/map";
+import axios from "axios";
 
 const models = [
   { name: "Gemini 2.5 Flash", value: "gemini-2.5-flash" },
@@ -129,11 +130,23 @@ const ChatBotDemo = ({
 
     if (!lastMessage || lastMessage.role !== "assistant") return;
 
+    const errorPart = lastMessage.parts.find(
+      (part) => part.type === "data-Error"
+    );
+    if (errorPart) {
+      const errorMsg =
+        (errorPart as any).data?.agentData ??
+        "An unknown error occurred on the server.";
+      setError(errorMsg);
+    }
+
     const toolCalls = lastMessage.parts.filter((part) =>
       part.type.startsWith("tool-")
     );
 
-    if (toolCalls.length === 0) return;
+    if (toolCalls.length === 0) {
+      if (errorPart) return;
+    }
 
     for (const toolCall of toolCalls) {
       try {
@@ -160,12 +173,28 @@ const ChatBotDemo = ({
       }
     }
     console.log(toolCalls);
-
-    // This hook runs *only* when the messages array changes.
-    // We disable the eslint rule because we *intentionally*
-    // don't want this to re-run if the prop functions change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || !lastMessage.id) return;
+    if (status !== "ready" && lastMessage.role === "assistant") {
+      return;
+    }
+    const saveMessage = async () => {
+      try {
+        await axios.post("/api/user/conversations", {
+          message: lastMessage,
+        });
+      } catch (err) {
+        console.error("Failed to save message:", err);
+      }
+    };
+
+    saveMessage();
+  }, [messages, status]);
 
   return (
     <div className="w-full h-full p-4 md:p-6 bg-zinc-950 overflow-hidden">
@@ -173,7 +202,9 @@ const ChatBotDemo = ({
         {error && (
           <div className="bg-red-600/10 border border-red-600 text-red-400 p-2 mb-2 rounded-md text-sm flex items-center gap-2">
             <TriangleAlertIcon className="w-4 h-4" />
-            {error}
+            <pre className="wrap-break-word whitespace-pre-wrap font-sans">
+              {error}
+            </pre>
           </div>
         )}
 
@@ -326,7 +357,7 @@ const ChatBotDemo = ({
                 })}
               </div>
             ))}
-            {(status === "submitted" || status === "streaming") && <Loader />}
+            {status !== "ready" && <Loader />}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>

@@ -39,8 +39,12 @@ export const getRouteWithTraffic = tool({
       getLocationCoords(destination),
     ]);
 
-    if (!coord1) return { error: `Could not find coordinates for origin: ${origin}` };
-    if (!coord2) return { error: `Could not find coordinates for destination: ${destination}` };
+    if (!coord1)
+      return { error: `Could not find coordinates for origin: ${origin}` };
+    if (!coord2)
+      return {
+        error: `Could not find coordinates for destination: ${destination}`,
+      };
 
     // Routing
     const routingPromise = (async () => {
@@ -68,7 +72,7 @@ export const getRouteWithTraffic = tool({
       }
     })();
 
-    // Traffic incidents 
+    // Traffic incidents
     const trafficPromise = (async () => {
       try {
         const result = await axios.get(
@@ -79,11 +83,12 @@ export const getRouteWithTraffic = tool({
         return { error: "Failed to fetch traffic incidents from TomTom." };
       }
     })();
-    
+
     const [routes, trafficIncidents] = await Promise.all([
       routingPromise,
       trafficPromise,
     ]);
+    console.log("TOOL : getRouteWithTraffic");
 
     return {
       origin: { name: origin, ...coord1 },

@@ -1,5 +1,5 @@
 import { getDetailedLocationReport } from "@/tools/detailedLocationReport";
-import { findNearbyUser } from "@/tools/findNearbyUser";
+import { findNearbyUser } from "../tools/findNearbyUser";
 import { getRouteWithTraffic } from "@/tools/getRouteWithTraffic";
 import { googlesearch } from "@/tools/googlesearch";
 import { currentLocation } from "@/tools/location";

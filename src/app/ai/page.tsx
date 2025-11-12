@@ -5,10 +5,12 @@ import ChatBotDemo from "@/components/Chatbot";
 import dynamic from "next/dynamic";
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
-  loading: () => <div>Loading map...</div>,
+  loading: () => <div>
+        <LoaderFive text="Loading map..." /></div>,
 });
 import axios from "axios";
 import { MapMarker, MapRoute, MapView } from "@/types/map";
+import { LoaderFive } from "@/components/ui/loader";
 
 const Page = () => {
   const containerRef = useRef<HTMLDivElement>(null);

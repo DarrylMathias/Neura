@@ -19,6 +19,8 @@ export const updateMarkers = tool({
     ),
   }),
   execute: async ({ markers }) => {
+    console.log("TOOL : updateMarkers");
+
     return {
       tool: "updateMarkers",
       status: "success",
