@@ -5,7 +5,7 @@ import "dotenv/config";
 
 export const nearbyPlaces = tool({
   description:
-    "Find the nearest Places of Interest near a coordinate for a particular query",
+    "Find the nearest Places of Interest near any coordinate for a particular query",
   inputSchema: z.object({
     radius: z
       .number()

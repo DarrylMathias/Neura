@@ -82,7 +82,7 @@ const ChatBotDemo = ({
   const [input, setInput] = useState("");
   const [model, setModel] = useState<string>(models[0].value);
   const [error, setError] = useState<string | null>(null);
-  const { messages, sendMessage, status, regenerate } = useChat();
+  const { messages, sendMessage, status, regenerate, stop } = useChat();
 
   const handleSubmit = async (message: PromptInputMessage) => {
     setError(null);
@@ -91,6 +91,7 @@ const ChatBotDemo = ({
     if (!(hasText || hasAttachments)) return;
 
     try {
+      setInput("");
       await sendMessage(
         {
           text: message.text || "Sent with attachments",
@@ -98,7 +99,6 @@ const ChatBotDemo = ({
         },
         { body: { model, location } }
       );
-      setInput("");
       if (message.files) message.files.length = 0;
     } catch (err) {
       console.error(err);
@@ -139,16 +139,21 @@ const ChatBotDemo = ({
       try {
         switch (toolCall.type) {
           case "tool-updateMarkers":
-            onUpdateMarkers(toolCall.output?.data || []);
+            console.log("Marker update");
+            onUpdateMarkers(
+              ((toolCall.output as any)?.data ?? []) as MapMarker[]
+            );
             break;
           case "tool-updateRoutes":
-            onUpdateRoutes(toolCall.output?.data || []);
+            console.log("Routes update");
+            onUpdateRoutes(((toolCall.output as any) ?? []) as MapRoute[]);
             break;
           case "tool-setMapView":
-            onSetMapView(toolCall.output?.data || {});
+            console.log("Views update");
+            onSetMapView(((toolCall.output as any)?.data ?? {}) as MapView);
             break;
           default:
-            console.warn("Unknown tool call:", toolCall.type);
+          // console.warn("Unknown tool call:", toolCall.type);
         }
       } catch (err) {
         console.error("Failed to process tool call:", toolCall.type, err);
@@ -252,25 +257,29 @@ const ChatBotDemo = ({
 
                     default:
                       if (part.type.startsWith("tool-")) {
+                        const headerState =
+                          (part as any).state ?? "output-available";
+                        const toolPart = part as any;
+                        const outputStr = toolPart.output
+                          ? safeStringify(toolPart.output)
+                          : "No data available.";
+                        const errorStr = toolPart.errorText ?? "";
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
                             <ToolHeader
-                              type={part.type}
-                              state={part.state ?? "output-available"}
+                              type={part.type as `tool-${string}`}
+                              state={headerState}
                             />
-                            <ToolContent>
-                              <pre className="wrap-break-word whitespace-pre-wrap">
-                                <ToolOutput
-                                  output={
-                                    part.output
-                                      ? safeStringify(part.output)
-                                      : "No data available."
-                                  }
-                                  errorText={part.errorText ?? ""}
-                                  type="tool"
-                                />
-                              </pre>
-                            </ToolContent>
+                            {part.type !== "tool-updateRoutes" && (
+                              <ToolContent>
+                                <pre className="wrap-break-word whitespace-pre-wrap">
+                                  <ToolOutput
+                                    output={outputStr}
+                                    errorText={errorStr}
+                                  />
+                                </pre>
+                              </ToolContent>
+                            )}
                           </Tool>
                         );
                       }
@@ -283,7 +292,7 @@ const ChatBotDemo = ({
                         return (
                           <Tool key={`${message.id}-${i}`} defaultOpen={false}>
                             <ToolHeader
-                              type={part.type}
+                              type={part.type as `data-${string}`}
                               state={
                                 isError ? "output-error" : "output-available"
                               }
@@ -295,14 +304,15 @@ const ChatBotDemo = ({
                                     isError
                                       ? ""
                                       : safeStringify(
-                                          part.data?.agentData ??
+                                          (part as any).data?.agentData ??
                                             "No agent data."
                                         )
                                   }
                                   errorText={
                                     isError
-                                      ? part.data?.agentData ?? "Unknown error."
-                                      : part.errorText ?? ""
+                                      ? (part as any).data?.agentData ??
+                                        "Unknown error."
+                                      : (part as any).errorText ?? ""
                                   }
                                 />
                               </pre>
@@ -366,7 +376,11 @@ const ChatBotDemo = ({
               </PromptInputSelect>
             </PromptInputTools>
 
-            <PromptInputSubmit disabled={!input && !status} status={status} />
+            <PromptInputSubmit
+              disabled={!input && !status}
+              status={status}
+              onAbort={stop}
+            />
           </PromptInputFooter>
         </PromptInput>
       </div>

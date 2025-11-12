@@ -30,8 +30,6 @@ interface AgentState {
   errors?: string;
 }
 
-const knowledgeBase: AgentState[] = [];
-
 export async function POST(req: Request) {
   const {
     messages,
@@ -44,7 +42,32 @@ export async function POST(req: Request) {
   } = await req.json();
 
   const modalMsgs = convertToModelMessages(messages);
-  const lastMessage = modalMsgs.at(-1)?.content?.[0]?.text || "";
+  const lastMsg = modalMsgs.at(-1);
+  let lastMessage = "";
+  if (lastMsg) {
+    const c = lastMsg.content;
+    if (Array.isArray(c)) {
+      const firstTextPart = c.find(
+        (p) => typeof p !== "string" && (p as any).type === "text"
+      );
+      if (
+        firstTextPart &&
+        typeof firstTextPart !== "string" &&
+        "text" in firstTextPart
+      ) {
+        lastMessage = (firstTextPart as any).text;
+      } else {
+        const firstStringPart = c.find((p) => typeof p === "string") as
+          | string
+          | undefined;
+        lastMessage = firstStringPart ?? "";
+      }
+    } else if (typeof c === "string") {
+      lastMessage = c;
+    } else if (c && typeof c === "object" && "text" in c) {
+      lastMessage = (c as any).text;
+    }
+  }
   const formattedHistory = modalMsgs
     .map((msg) => {
       const content = Array.isArray(msg.content)
@@ -60,7 +83,10 @@ export async function POST(req: Request) {
     if (!isAuthenticated) {
       redirectToSignIn();
     } else {
-      modelWithMemory = withSupermemory(google("gemini-2.5-flash"), userId);
+      modelWithMemory = withSupermemory(google("gemini-2.5-flash"), userId, {
+        mode: "full",
+        verbose : true
+      });
     }
 
     const stream = createUIMessageStream<MyUIMessage>({
@@ -109,19 +135,16 @@ export async function POST(req: Request) {
 
         const agents = state.orchestrator;
 
-        // Plan : Interaction Agent
-        if (agents?.agentsToUse.length > 0) {
-          await safeRun("InteractionAgent", async () => {
-            const intAgent = await createInteractionAgent(
-              modelWithMemory,
-              state,
-              location,
-              "plan"
-            );
-            const result = intAgent.stream({ messages: modalMsgs });
-            writer.merge(result.toUIMessageStream());
-          });
-        }
+        await safeRun("InteractionAgent", async () => {
+          const intAgent = await createInteractionAgent(
+            modelWithMemory,
+            state,
+            location,
+            "plan"
+          );
+          const result = intAgent.stream({ messages: modalMsgs });
+          writer.merge(result.toUIMessageStream());
+        });
 
         // 2: Context Agent
         if (agents?.agentsToUse?.includes("ContextAgent")) {
@@ -227,17 +250,6 @@ export async function POST(req: Request) {
             writer.merge(result.toUIMessageStream());
           });
         }
-
-        await safeRun("InteractionAgent", async () => {
-          const intAgent = await createInteractionAgent(
-            modelWithMemory,
-            state,
-            location
-          );
-          const result = intAgent.stream({ messages: modalMsgs });
-          writer.merge(result.toUIMessageStream());
-        });
-        knowledgeBase.push({ ...state, id: knowledgeBase.length + 1});
       },
     });
 

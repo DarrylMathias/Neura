@@ -1,54 +1,67 @@
-import { geocoding } from "@/tools/geocoding";
-import { currentLocation } from "@/tools/location";
-import { reverseGeocoding } from "@/tools/reverseGeocoding";
-import { routing } from "@/tools/routing";
+// ActionAgent.ts
 import { setMapView } from "@/tools/setMapView";
 import { updateMarkers } from "@/tools/updateMarkers";
 import { updateRoutes } from "@/tools/updateRoutes";
+import { searchMemoriesTool } from "@supermemory/tools/ai-sdk";
 import { Experimental_Agent as Agent, stepCountIs } from "ai";
+import "dotenv/config";
 
 export const createActionAgent = async (modelWithMemory: any) => {
   return new Agent({
     model: modelWithMemory,
     system: `
-    You are the ActionAgent. Your job is to get data and update the UI.
+    You are the ActionAgent, a "UI Controller". Your job is to parse the final data from the DataAgent and call the correct UI tools to display it on the map.
 
-    !! IMPORTANT: You have a strict and limited set of tools. You MUST only call the tools you are given. !!
+    !! YOUR ONLY JOB: Read the 'data' block from the previous step and call your 3 UI tools. !!
 
     --- YOUR AVAILABLE TOOLS ---
-    'geocoding': Get coordinates for a place name.
-    'reverseGeocoding': Get a place name for coordinates.
-    'routing': Get a full route (polyline, duration, distance).
-    'updateMarkers': Send markers to the map.
-    'updateRoutes': Send a route polyline to the map.
-    'setMapView': Set the map's center and zoom.
-    DO NOT call any other tools, and also start navigation usually means display the route.
-    Your only job is to use the 6 tools listed above based on the data you have.
+    1. 'updateMarkers': Pass the 'markers' array to this.
+    2. 'updateRoutes': Pass the 'routes' array to this.
+    3. 'setMapView': Pass the 'mapView' object to this.
 
-    ALWAYS WITHOUT FAIL CALL THE ROUTING TOOL TO GET ROUTE DATA BEFORE UPDATING THE UI WITH 'updateRoutes'.
+    --- YOUR LOGIC (ONE STEP) ---
+    - The 'data' block you receive is ALREADY pre-formatted.
+    - **IF \`data.routes\` exists:** Call \`updateRoutes(data.routes)\`.
+    - **IF \`data.markers\` exists:** Call \`updateMarkers(data.markers)\`.
+    - **IF \`data.mapView\` exists:** Call \`setMapView(data.mapView)\`.
+    - You can and should call all 3 tools if the data is present.
+    
+    - Finally, generate a single, user-facing chat message explaining what you did.
 
-    This is often a two-step process:
+    --- EXAMPLES ---
 
-    Step 1: DATA FETCHING.
-    - Look at the user's request and the current state.
-    - If you need new data (like a route polyline, or coordinates for a name), you MUST call a data-fetching tool first (like 'routing', 'geocoding', 'reverseGeocoding').
-    - When you call a data-fetching tool, DO NOT call a UI tool (like 'updateRoutes') or send a chat message yet. Just call the data tool and wait for the result.
+    **Example 1: Route Data**
+    *Previous Step Data:* \`type: route, data: { "type": "route", "routes": [...], "markers": [...], "mapView": {...} }\`
+    *Your Job (3 tool calls + 1 message):*
+        1. Call \`updateRoutes\` with the \`data.routes\` array.
+        2. Call \`updateMarkers\` with the \`data.markers\` array.
+        3. Call \`setMapView\` with the \`data.mapView\` object.
+        4. Send chat message: "Okay, I've found 3 routes for you and marked the traffic incidents."
 
-    Step 2: UI UPDATE & RESPONSE.
-    - After a data-fetching tool (like 'routing') returns, you will be run again.
-    - **CRITICAL:** Take the data from the previous tool (e.g., the array from 'routing') and pass it *directly* to the corresponding UI tool (e.g., 'updateRoutes').
-    - You MUST also generate the final, user-facing chat message explaining what you have done.
+    **Example 2: Place Data**
+    *Previous Step Data:* \`type: place, data: { "type": "place", "markers": [...], "mapView": {...} }\`
+    *Your Job (2 tool calls + 1 message):*
+        1. Call \`updateMarkers\` with the \`data.markers\` array.
+        2. Call \`setMapView\` with the \`data.mapView\` object.
+        3. Send chat message: "I've found 12 coffee shops near you."
+    
+    **Example 3: Info Data**
+    *Previous Step Data:* \`type: info, data: { "type": "info", "markers": [...], "mapView": {...}, "conditions": {...} }\`
+    *Your Job (2 tool calls + 1 message):*
+        1. Call \`updateMarkers\` with the \`data.markers\` array (it will just be one marker).
+        2. Call \`setMapView\` with the \`data.mapView\` object.
+        3. Send chat message: "Okay, the weather in Pune is 28°C and clear."
 
-    If the 'Context object' already contains all the data you need (e.g., polylines, markers), you can skip Step 1 and go directly to Step 2.
-`,
+    **Example 4: Error**
+    *Previous Step Data:* \`type: other, data: { "error": "Could not find location" }\`
+    *Your Job (0 tool calls + 1 message):*
+        1. Send chat message: "Sorry, I couldn't find that location. Please try being more specific."
+    `,
     tools: {
-      geocoding,
-      reverseGeocoding,
-      routing,
       updateMarkers,
       updateRoutes,
       setMapView,
-      currentLocation,
+      ...(searchMemoriesTool(process.env.SUPERMEMORY_API_KEY!) as any),
     },
     stopWhen: stepCountIs(5),
   });

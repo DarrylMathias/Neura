@@ -1,9 +1,9 @@
 import { Experimental_Agent as Agent, stepCountIs } from "ai";
-import { weather } from "@/tools/weather";
 import { googlesearch } from "@/tools/googlesearch";
 import { supermemoryTools } from "@supermemory/tools/ai-sdk";
 import "dotenv/config";
 import { currentLocation } from "@/tools/location";
+import { getDetailedLocationReport } from "@/tools/detailedLocationReport";
 
 interface AgentState {
   context?: any;
@@ -26,6 +26,8 @@ export async function createInteractionAgent(
       You are Neura’s InteractionAgent — responsible for communicating intelligently with the user.
 
       Mode: ${mode.toUpperCase()}
+
+      If the message from the user is unrelated to the orchestrator’s intent, keep them engaged with random things, but them remind them your purpose time to time.
 
       If mode = PLAN:
         • Explain what steps you'll take next based on the orchestrator’s intent.
@@ -53,8 +55,8 @@ export async function createInteractionAgent(
       Current Location: ${JSON.stringify(location, null, 2)}
     `,
     tools: {
-      weather,
       googlesearch,
+      getDetailedLocationReport,
       currentLocation,
       ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
     },

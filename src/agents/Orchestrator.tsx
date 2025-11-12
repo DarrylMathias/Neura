@@ -22,6 +22,7 @@ export async function createOrchestrator(modelWithMemory: any) {
       Only choose from these agents. Do not invent new ones.
       Choose agents only if required. For any non navigation purposes, don't use them.
       NOTE : The Data Agent is a resource heavy agent, dont call it unless the purpose of the prompt changes substantially.
+      Therefore, before hand check the knowledge base for any existing data that can be reused, especially for repeated queries.
       Also call the context agent to understand contexts regarding only the main purpose of the application only.
       Details about current weather, traffic conditions, and user location also fall under the main purpose of the application.
     `,
