@@ -2,7 +2,11 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { UIMessage } from "ai";
 import { NextRequest, NextResponse } from "next/server";
-import { Role } from "../../../../../generated/prisma/enums";
+
+const enum Role {
+  user = "USER",
+  assistant = "ASSISTANT",
+}
 
 function parseMessageForPrisma(message: UIMessage) {
   const textPart = message.parts.filter((part) => part.type === "text");
