@@ -24,7 +24,7 @@ importers:
         specifier: ^8.2.2
         version: 8.2.2(zod@4.1.12)
       '@prisma/client':
-        specifier: ^6.19.0
+        specifier: 6.19.0
         version: 6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3)
       '@radix-ui/react-collapsible':
         specifier: ^1.1.12
@@ -163,7 +163,7 @@ importers:
         specifier: 16.0.1
         version: 16.0.1(@typescript-eslint/parser@8.46.3(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       prisma:
-        specifier: ^6.19.0
+        specifier: 6.19.0
         version: 6.19.0(typescript@5.9.3)
       tailwindcss:
         specifier: ^4

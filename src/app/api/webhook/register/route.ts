@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
+    console.log(req);
     const event = await verifyWebhook(req);
-    // console.log(event.data);
+    console.log(event.data);
     console.log(`Received webhook with event type of ${event.type}`);
     if (event.type === "user.created") {
       const {
@@ -57,8 +58,8 @@ export async function POST(req: NextRequest) {
         },
       });
     }
-    return NextResponse.json({ message: "Success", status: 200 });
+    return NextResponse.json({ message: "Success" }, { status: 200 });
   } catch (err) {
-    return NextResponse.json({ error: JSON.stringify(err), status: 400 });
+    return NextResponse.json({ error: JSON.stringify(err) }, { status: 400 });
   }
 }

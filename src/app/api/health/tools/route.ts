@@ -1,15 +1,13 @@
 import { GoogleCustomSearchClient } from "@deepagent/google-custom-search";
 import { WeatherClient } from "@deepagent/weather";
 import axios from "axios";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import "dotenv/config";
 
-export async function GET({
-  params,
-}: {
-  params: Promise<{ securityKey: string }>;
-}) {
-  const { securityKey } = await params;
+export async function GET(request: NextRequest) {
+  // Get search parameters from the request URL
+  const securityKey = request.nextUrl.searchParams.get("securityKey");
+
   if (!securityKey)
     return NextResponse.json(
       { error: "Security key is required" },
@@ -21,6 +19,7 @@ export async function GET({
       { status: 403 }
     );
   }
+  console.log("Security authorized..");
   const googleCustomSearch = new GoogleCustomSearchClient();
   const weather = new WeatherClient();
 

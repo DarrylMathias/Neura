@@ -168,7 +168,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/home/darry/Programming/Agentic/neura/prisma/generated/prisma/client",
+      "value": "/home/darry/Programming/Agentic/neura/src/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -187,9 +187,9 @@ const config = {
   },
   "relativeEnvPaths": {
     "rootEnvPath": null,
-    "schemaEnvPath": "../../../../.env"
+    "schemaEnvPath": "../../../.env"
   },
-  "relativePath": "../../..",
+  "relativePath": "../../../prisma",
   "clientVersion": "6.19.0",
   "engineVersion": "2ba551f319ab1df4bc874a89965d8b3641056773",
   "datasourceNames": [
@@ -205,8 +205,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/prisma/client\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nenum Role {\n  user\n  assistant\n}\n\nmodel User {\n  id           String         @id\n  createdAt    DateTime       @default(now())\n  email        String?        @unique\n  first_name   String?\n  last_name    String?\n  conversation Conversation[]\n}\n\nmodel Conversation {\n  id        String    @id @default(cuid())\n  title     String?   @default(\"Main Conversation\")\n  userId    String\n  user      User      @relation(fields: [userId], references: [id])\n  createdAt DateTime  @default(now())\n  updatedAt DateTime  @updatedAt\n  messages  Message[]\n\n  @@index([userId])\n}\n\nmodel Message {\n  id             String       @id @default(cuid())\n  conversationId String\n  conversation   Conversation @relation(fields: [conversationId], references: [id])\n  message        Json\n  role           Role\n  content        String?\n  agentName      String?\n  toolUsed       String?\n  sourceURL      String?\n  file           String?\n  reasoning      String?\n  createdAt      DateTime     @default(now())\n\n  @@index([conversationId])\n  @@index([toolUsed])\n  @@index([agentName])\n}\n",
-  "inlineSchemaHash": "7baa9c32205269195234f5f59249a1cbf5dc19faadfc139d0dd8965562e334b5",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/client\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nenum Role {\n  user\n  assistant\n}\n\nmodel User {\n  id           String         @id\n  createdAt    DateTime       @default(now())\n  email        String?        @unique\n  first_name   String?\n  last_name    String?\n  conversation Conversation[]\n}\n\nmodel Conversation {\n  id        String    @id @default(cuid())\n  title     String?   @default(\"Main Conversation\")\n  userId    String\n  user      User      @relation(fields: [userId], references: [id])\n  createdAt DateTime  @default(now())\n  updatedAt DateTime  @updatedAt\n  messages  Message[]\n\n  @@index([userId])\n}\n\nmodel Message {\n  id             String       @id @default(cuid())\n  conversationId String\n  conversation   Conversation @relation(fields: [conversationId], references: [id])\n  message        Json\n  role           Role\n  content        String?\n  agentName      String?\n  toolUsed       String?\n  sourceURL      String?\n  file           String?\n  reasoning      String?\n  createdAt      DateTime     @default(now())\n\n  @@index([conversationId])\n  @@index([toolUsed])\n  @@index([agentName])\n}\n",
+  "inlineSchemaHash": "7af398504523f99f15a3ce81f553fa8c1e01c0330cd769434f9996e3b2629e1a",
   "copyEngine": true
 }
 config.dirname = '/'

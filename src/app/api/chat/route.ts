@@ -84,6 +84,7 @@ export async function POST(req: Request) {
         );
 
         // 1: Orchestrator
+        console.log('Running Orchestrator ');
         await safeRun("Orchestrator", "generate", async (modelWithMemory) => {
           const orchestrator = await createOrchestrator(modelWithMemory);
           const { experimental_output: agents } = await orchestrator.generate({

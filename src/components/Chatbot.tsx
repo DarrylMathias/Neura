@@ -28,7 +28,7 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { Action, Actions } from "@/components/ai-elements/actions";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai-elements/response";
 import { CopyIcon, RefreshCcwIcon, TriangleAlertIcon } from "lucide-react";
@@ -84,6 +84,10 @@ const ChatBotDemo = ({
   const [model, setModel] = useState<string>(models[0].value);
   const [error, setError] = useState<string | null>(null);
   const { messages, sendMessage, status, regenerate, stop } = useChat();
+  const [lastSavedMessageId, setLastSavedMessageId] = useState<string | null>(
+    null
+  );
+  const isSavingRef = useRef(false);
 
   const handleSubmit = async (message: PromptInputMessage) => {
     setError(null);
@@ -180,21 +184,32 @@ const ChatBotDemo = ({
     if (messages.length === 0) return;
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || !lastMessage.id) return;
-    if (status !== "ready" && lastMessage.role === "assistant") {
+    if (lastMessage.id === lastSavedMessageId) {
       return;
     }
+    if (status === "streaming" && lastMessage.role === "assistant") {
+      return;
+    }
+    if (isSavingRef.current) {
+      return;
+    }
+
     const saveMessage = async () => {
+      isSavingRef.current = true;
       try {
         await axios.post("/api/user/conversations", {
           message: lastMessage,
         });
+        setLastSavedMessageId(lastMessage.id);
       } catch (err) {
         console.error("Failed to save message:", err);
+      } finally {
+        isSavingRef.current = false;
       }
     };
 
     saveMessage();
-  }, [messages, status]);
+  }, [messages, status, lastSavedMessageId]);
 
   return (
     <div className="w-full h-full p-4 md:p-6 bg-zinc-950 overflow-hidden">

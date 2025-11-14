@@ -2,11 +2,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { UIMessage } from "ai";
 import { NextRequest, NextResponse } from "next/server";
-
-const enum Role {
-  user = "USER",
-  assistant = "ASSISTANT",
-}
+import {Role} from '@/generated/client'
 
 function parseMessageForPrisma(message: UIMessage) {
   const textPart = message.parts.filter((part) => part.type === "text");
@@ -64,13 +60,13 @@ export async function POST(req: NextRequest) {
 
     const existingConversation = await prisma.conversation.findFirst({
       where: { userId },
-      orderBy : {updatedAt : 'desc'}
+      orderBy: { updatedAt: "desc" },
     });
 
     let conversation;
     if (existingConversation) {
       conversation = await prisma.conversation.update({
-        where: { id : existingConversation.id },
+        where: { id: existingConversation.id },
         data: {
           messages: {
             create: { ...parseMessageForPrisma(message) },
