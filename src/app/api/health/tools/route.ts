@@ -2,9 +2,25 @@ import { GoogleCustomSearchClient } from "@deepagent/google-custom-search";
 import { WeatherClient } from "@deepagent/weather";
 import axios from "axios";
 import { NextResponse } from "next/server";
-import "dotenv/config"
+import "dotenv/config";
 
-export async function GET() {
+export async function GET({
+  params,
+}: {
+  params: Promise<{ securityKey: string }>;
+}) {
+  const { securityKey } = await params;
+  if (!securityKey)
+    return NextResponse.json(
+      { error: "Security key is required" },
+      { status: 400 }
+    );
+  if (securityKey !== process.env.API_SECURITY_KEY) {
+    return NextResponse.json(
+      { error: "Invalid security key" },
+      { status: 403 }
+    );
+  }
   const googleCustomSearch = new GoogleCustomSearchClient();
   const weather = new WeatherClient();
 
@@ -12,14 +28,13 @@ export async function GET() {
   const googleQuery = "Weather in boisar";
   const coord = { lat: 18.9582, lng: 72.8321 };
   const radius = 30000;
-  const zoom = 8
+  const zoom = 8;
   const query = "coffee shops";
   const lat = 18.9582;
   const lon = 72.8321;
   const modeOfTransportation = "car";
   const coord1 = { lat: 19.7969, lng: 72.7452 };
   const coord2 = { lat: 19.4564, lng: 72.7925 };
-
 
   const geocoding = axios.get(
     `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`
@@ -46,16 +61,25 @@ export async function GET() {
     `https://api.tomtom.com/traffic/services/5/incidentDetails?fields={incidents{type,geometry{type,coordinates},properties{iconCategory,magnitudeOfDelay,events{description,iconCategory},startTime,endTime,from,to,length,delay,roadNumbers,timeValidity,probabilityOfOccurrence,numberOfReports,lastReportTime}}}&key=${process.env.TOM_TOM_API_KEY}&bbox=${coord1.lat},${coord1.lng},${coord2.lat},${coord2.lng}&language=en-GB&t=1111&timeValidityFilter=present,future`
   );
   const weatherAPI = weather.getCurrentWeather(location);
-  const results = await Promise.allSettled([geocoding,googleSearch,nearbyPlaces,reverseGeocoding,routing,trafficFlow,trafficIncidentDetails,weatherAPI]);
+  const results = await Promise.allSettled([
+    geocoding,
+    googleSearch,
+    nearbyPlaces,
+    reverseGeocoding,
+    routing,
+    trafficFlow,
+    trafficIncidentDetails,
+    weatherAPI,
+  ]);
   results.map((result) => {
-    if(result.status === "rejected")
-        console.log(result.reason);
-    else
-        console.log("Tool is healthy")
-  } )
+    if (result.status === "rejected") console.log(result.reason);
+    else console.log("Tool is healthy");
+  });
   return NextResponse.json({
     results: results.map((r) =>
-      r.status === "rejected" ? `${r.reason.message} | ${r.reason.config.url} | ${r.reason.code}` : "Tool is healthy"
+      r.status === "rejected"
+        ? `${r.reason.message} | ${r.reason.config.url} | ${r.reason.code}`
+        : "Tool is healthy"
     ),
   });
 }

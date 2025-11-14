@@ -13,22 +13,11 @@ import { jsonAgent } from "@/agents/JSONAgent";
 import { dataAgentSchema } from "@/agents/schemas/dataAgentSchema";
 import { createReasoningAgent } from "@/agents/ReasoningAgent";
 import { auth } from "@clerk/nextjs/server";
-import { google } from "@ai-sdk/google";
-import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { createActionAgent } from "@/agents/ActionAgent";
+import { AgentState } from "@/types/AgentState";
+import { bounceKey } from "@/helpers/keyBounce";
 
 export const maxDuration = 30;
-
-interface AgentState {
-  id?: number;
-  orchestrator?: any;
-  context?: any;
-  data?: any;
-  reasoning?: any;
-  action?: any;
-  summary?: string;
-  errors?: string;
-}
 
 export async function POST(req: Request) {
   const {
@@ -78,38 +67,24 @@ export async function POST(req: Request) {
     .join("\n");
 
   try {
-    const { isAuthenticated, redirectToSignIn, userId } = await auth();
-    let modelWithMemory = google("gemini-2.5-flash");
-    if (!isAuthenticated) {
-      redirectToSignIn();
-    } else {
-      modelWithMemory = withSupermemory(google("gemini-2.5-flash"), userId, {
-        mode: "full",
-      });
-    }
-
     const stream = createUIMessageStream<MyUIMessage>({
       execute: async ({ writer }) => {
         const state: AgentState = {};
 
-        const safeRun = async (name: string, fn: () => Promise<void>) => {
-          try {
-            await fn();
-          } catch (err) {
-            if (name === "Orchestrator") throw err;
-            console.error(`[${name}] Error:`, err);
-            const msg =
-              err instanceof Error ? err.message : JSON.stringify(err);
-            writer.write({
-              type: "data-Error",
-              data: { agentData: `[${name}] failed:\n\n ${msg}` },
-            });
-            state.errors = `[${name}] failed:\n\n ${msg}`;
-          }
-        };
+        const { isAuthenticated, redirectToSignIn, userId } = await auth();
+        if (!isAuthenticated) {
+          redirectToSignIn();
+          return;
+        }
+
+        const { safeRun, streamingModel } = await bounceKey(
+          userId!,
+          writer,
+          state
+        );
 
         // 1: Orchestrator
-        await safeRun("Orchestrator", async () => {
+        await safeRun("Orchestrator", "generate", async (modelWithMemory) => {
           const orchestrator = await createOrchestrator(modelWithMemory);
           const { experimental_output: agents } = await orchestrator.generate({
             prompt: `
@@ -134,9 +109,9 @@ export async function POST(req: Request) {
 
         const agents = state.orchestrator;
 
-        await safeRun("InteractionAgent", async () => {
+        await safeRun("InteractionAgent", "stream", async () => {
           const intAgent = await createInteractionAgent(
-            modelWithMemory,
+            streamingModel,
             state,
             location,
             "plan"
@@ -147,7 +122,7 @@ export async function POST(req: Request) {
 
         // 2: Context Agent
         if (agents?.agentsToUse?.includes("ContextAgent")) {
-          await safeRun("ContextAgent", async () => {
+          await safeRun("ContextAgent", "generate", async (modelWithMemory) => {
             const contextAgent = await createContextAgent(modelWithMemory);
             const { experimental_output: context } =
               await contextAgent.generate({
@@ -172,7 +147,7 @@ export async function POST(req: Request) {
 
         // \3: Data Agent
         if (agents?.agentsToUse?.includes("DataAgent")) {
-          await safeRun("DataAgent", async () => {
+          await safeRun("DataAgent", "generate", async (modelWithMemory) => {
             const dataAgent = await createDataAgent(modelWithMemory);
             const result = await dataAgent.generate({
               prompt: `
@@ -210,11 +185,16 @@ export async function POST(req: Request) {
 
         // 4: Reasoning Agent
         if (agents?.agentsToUse?.includes("ReasoningAgent")) {
-          const reasoningAgent = await createReasoningAgent(modelWithMemory);
-          await safeRun("ReasoningAgent", async () => {
-            const { experimental_output: reasoning } =
-              await reasoningAgent.generate({
-                prompt: `
+          await safeRun(
+            "ReasoningAgent",
+            "generate",
+            async (modelWithMemory) => {
+              const reasoningAgent = await createReasoningAgent(
+                modelWithMemory
+              );
+              const { experimental_output: reasoning } =
+                await reasoningAgent.generate({
+                  prompt: `
                   User request: ${lastMessage}
                   Full Conversation History:
                   ${formattedHistory}
@@ -222,20 +202,21 @@ export async function POST(req: Request) {
 
                   Reason on what options to select from the intent of the user and what seems best for the user.
                 `,
-              });
+                });
 
-            state.reasoning = reasoning;
-            writer.write({
-              type: "data-Reasoning",
-              data: { agentData: state.reasoning, input: state.context },
-            });
-          });
+              state.reasoning = reasoning;
+              writer.write({
+                type: "data-Reasoning",
+                data: { agentData: state.reasoning, input: state.context },
+              });
+            }
+          );
         }
 
         // Action Agent
         if (agents?.agentsToUse?.includes("ActionAgent")) {
-          const actionAgent = await createActionAgent(modelWithMemory);
-          await safeRun("ActionAgent", async () => {
+          await safeRun("ActionAgent", "stream", async () => {
+            const actionAgent = await createActionAgent(streamingModel);
             const result = actionAgent.stream({
               prompt: `
                   User request: ${lastMessage}
@@ -250,9 +231,9 @@ export async function POST(req: Request) {
           });
         }
 
-        await safeRun("InteractionAgent", async () => {
+        await safeRun("InteractionAgent", "stream", async () => {
           const intAgent = await createInteractionAgent(
-            modelWithMemory,
+            streamingModel,
             state,
             location
           );
