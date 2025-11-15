@@ -6,7 +6,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+    console.log(WEBHOOK_SECRET);
 
     if (!WEBHOOK_SECRET) {
       throw new Error(
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
     const svix_id = headerPayload.get("svix-id");
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
+    console.log(`${svix_id}, ${svix_timestamp}, ${svix_signature}`);
+    
 
     if (!svix_id || !svix_timestamp || !svix_signature) {
       return new Response("Error occurred -- no svix headers", {
@@ -37,6 +40,8 @@ export async function POST(req: Request) {
         "svix-timestamp": svix_timestamp,
         "svix-signature": svix_signature,
       }) as WebhookEvent;
+      console.log(event);
+      
     } catch (err) {
       console.error("Error verifying webhook:", err);
       return new Response("Error occurred", {
