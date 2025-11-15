@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import "dotenv/config";
 
 export async function GET(request: NextRequest) {
-  // Get search parameters from the request URL
   const securityKey = request.nextUrl.searchParams.get("securityKey");
+  console.log(securityKey);
 
   if (!securityKey)
     return NextResponse.json(
@@ -36,7 +36,12 @@ export async function GET(request: NextRequest) {
   const coord2 = { lat: 19.4564, lng: 72.7925 };
 
   const geocoding = axios.get(
-    `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`
+    `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`,
+    {
+      headers: {
+        "User-Agent": "NeuraAgent/1.0 (mathiasndarryl7@gmail.com)",
+      },
+    }
   );
   const googleSearch = googleCustomSearch.search(googleQuery);
   const nearbyPlaces = axios.get(
@@ -48,7 +53,12 @@ export async function GET(request: NextRequest) {
     }&lon=${coord.lng}&radius=${radius}`
   );
   const reverseGeocoding = axios.get(
-    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&addressdetails=1&namedetails=1`
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&addressdetails=1&namedetails=1`,
+    {
+      headers: {
+        "User-Agent": "NeuraAgent/1.0 (mathiasndarryl7@gmail.com)",
+      },
+    }
   );
   const routing = axios.get(
     `http://router.project-osrm.org/route/v1/${modeOfTransportation}/${coord1.lng},${coord1.lat};${coord2.lng},${coord2.lat}?geometries=geojson&overview=full&alternatives=3`

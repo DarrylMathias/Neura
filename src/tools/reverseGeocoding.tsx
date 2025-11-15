@@ -14,9 +14,14 @@ export const reverseGeocoding = tool({
   }),
   execute: async ({ lat, lon }) => {
     const res = await axios.get(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&addressdetails=1&namedetails=1`
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&addressdetails=1&namedetails=1`,
+      {
+        headers: {
+          "User-Agent": "NeuraAgent/1.0 (mathiasndarryl7@gmail.com)",
+        },
+      }
     );
-    console.log('Reverse geocoding tool called');
+    console.log("Reverse geocoding tool called");
     return res.data;
   },
 });

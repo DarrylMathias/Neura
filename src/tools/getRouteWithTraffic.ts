@@ -6,7 +6,12 @@ import "dotenv/config";
 async function getLocationCoords(location) {
   try {
     const res = await axios.get(
-      `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1&limit=1`
+      `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`,
+      {
+        headers: {
+          "User-Agent": "NeuraAgent/1.0 (mathiasndarryl7@gmail.com)",
+        },
+      }
     );
     if (!res.data || res.data.length === 0) {
       throw new Error(`No geocoding results for ${location}`);

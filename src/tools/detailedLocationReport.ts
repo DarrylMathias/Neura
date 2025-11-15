@@ -23,7 +23,12 @@ export const getDetailedLocationReport = tool({
     try {
       // Geocoding
       const geoRes = await axios.get(
-        `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1&limit=1`
+        `https://nominatim.openstreetmap.org/search?q=${location}&format=jsonv2&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "NeuraAgent/1.0 (mathiasndarryl7@gmail.com)",
+          },
+        }
       );
       if (!geoRes.data || geoRes.data.length === 0) {
         return { error: `Could not find geocoding for ${location}` };
