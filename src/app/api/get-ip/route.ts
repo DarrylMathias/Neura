@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-export async function GET(
-  request: NextRequest,
-  {
-    params,
-  }: {
-    params: Promise<{ securityKey: string }>;
-  }
-) {
-  const { securityKey } = await params;
+export async function GET(request: NextRequest) {
+  const securityKey = request.nextUrl.searchParams.get("securityKey");
+  console.log(securityKey);
+
   if (!securityKey)
     return NextResponse.json(
       { error: "Security key is required" },
@@ -21,6 +16,7 @@ export async function GET(
       { status: 403 }
     );
   }
+  console.log("Security authorized..");
   const ipString = request.headers.get("x-forwarded-for");
   const ip = ipString ? ipString.split(",")[0].trim() : "Ip not found";
   console.log(ip);
