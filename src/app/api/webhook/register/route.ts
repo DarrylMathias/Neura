@@ -1,5 +1,4 @@
 import { Webhook } from "svix";
-import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -15,12 +14,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const headerPayload = headers();
+    const headerPayload = req.headers;
+    console.log(headerPayload);
     const svix_id = headerPayload.get("svix-id");
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
     console.log(`${svix_id}, ${svix_timestamp}, ${svix_signature}`);
-    
 
     if (!svix_id || !svix_timestamp || !svix_signature) {
       return new Response("Error occurred -- no svix headers", {
@@ -41,7 +40,6 @@ export async function POST(req: Request) {
         "svix-signature": svix_signature,
       }) as WebhookEvent;
       console.log(event);
-      
     } catch (err) {
       console.error("Error verifying webhook:", err);
       return new Response("Error occurred", {
@@ -102,6 +100,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ message: "Success" }, { status: 200 });
   } catch (err) {
+    console.error("WEBHOOK_ERROR:", err);
     return NextResponse.json({ error: JSON.stringify(err) }, { status: 400 });
   }
 }
