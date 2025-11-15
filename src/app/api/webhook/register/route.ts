@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import prisma from "@/lib/prisma";
-import "dotenv/config";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
-  const headers = req.headers;
 
-  const svixId = headers.get("svix-id")!;
-  const svixTimestamp = headers.get("svix-timestamp")!;
-  const svixSignature = headers.get("svix-signature")!;
-  const wh = new Webhook(process.env.CLERK_WEBHOOK_SIGNING_SECRET!);
+  const svixId = req.headers.get("svix-id")!;
+  const svixTimestamp = req.headers.get("svix-timestamp")!;
+  const svixSignature = req.headers.get("svix-signature")!;
 
   if (!svixId || !svixTimestamp || !svixSignature) {
     return NextResponse.json(
-      { error: "Missing webhook headers" },
+      { error: "Missing svix headers" },
       { status: 400 }
     );
   }
+
+  const wh = new Webhook(process.env.CLERK_WEBHOOK_SIGNING_SECRET!);
 
   let event: any;
   try {
@@ -28,7 +33,6 @@ export async function POST(req: NextRequest) {
         "svix-signature": svixSignature,
       });
     } catch (err) {
-      console.error("Signature verification failed:", err);
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
     console.log(event.data);

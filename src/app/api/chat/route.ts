@@ -17,7 +17,7 @@ import { createActionAgent } from "@/agents/ActionAgent";
 import { AgentState } from "@/types/AgentState";
 import { bounceKey } from "@/helpers/keyBounce";
 
-export const maxDuration = 30;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const {
