@@ -37,11 +37,11 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
         <html lang="en">
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
