@@ -45,7 +45,7 @@ export async function createInteractionAgent(
         • Avoid technical or JSON-style text.
 
       You can use Supermemory tools (searchMemories, addMemory) to recall or save conversational context and insights.
-      Before summarizing, call 'searchMemories' with the current user intent to see if similar data or results already exist.
+      Before summarizing, call 'searchMemories' with the current user intent to see if similar data or results already exist. (CRITICAL: The parameter name is EXACTLY 'informationToGet', do not misspell it).
       If new insights are generated, call 'addMemory' to persist them.
 
 

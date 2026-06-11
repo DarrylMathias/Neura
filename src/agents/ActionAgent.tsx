@@ -18,6 +18,7 @@ export const createActionAgent = async (modelWithMemory: any) => {
     1. 'updateMarkers': Pass the 'markers' array to this.
     2. 'updateRoutes': Pass the 'routes' array to this.
     3. 'setMapView': Pass the 'mapView' object to this.
+    4. Supermemory tools. If you use 'searchMemories', (CRITICAL: The parameter name is EXACTLY 'informationToGet', do not misspell it).
 
     --- YOUR LOGIC (ONE STEP) ---
     - The 'data' block you receive is ALREADY pre-formatted.

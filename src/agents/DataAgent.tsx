@@ -49,7 +49,7 @@ export async function createDataAgent(modelWithMemory: any) {
 
   You have access to Supermemory tools (searchMemories, addMemory).
   When you fetch new structured data, always call 'addMemory' to remember it with the context type (e.g., 'route', 'place', or 'info').
-  If you need to check whether similar data already exists, use 'searchMemories'.
+  If you need to check whether similar data already exists, use 'searchMemories'. (CRITICAL: The parameter name is EXACTLY 'informationToGet', do not misspell it).
 
 
     ----
