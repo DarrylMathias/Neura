@@ -805,7 +805,7 @@ export const PromptInputTextarea = ({
       const submitButton = form?.querySelector(
         'button[type="submit"]'
       ) as HTMLButtonElement | null;
-      if (submitButton?.disabled) {
+      if (!submitButton || submitButton.disabled) {
         return;
       }
 
@@ -984,6 +984,7 @@ export const PromptInputActionMenuItem = ({
 
 export type PromptInputSubmitProps = ComponentProps<typeof InputGroupButton> & {
   status?: ChatStatus;
+  onAbort?: () => void;
 };
 
 export const PromptInputSubmit = ({
@@ -992,16 +993,36 @@ export const PromptInputSubmit = ({
   size = "icon-sm",
   status,
   children,
+  onAbort,
   ...props
 }: PromptInputSubmitProps) => {
+  const isGenerating = status === "streaming" || status === "submitted";
   let Icon = <CornerDownLeftIcon className="size-4" />;
 
   if (status === "submitted") {
     Icon = <Loader2Icon className="size-4 animate-spin" />;
   } else if (status === "streaming") {
-    Icon = <SquareIcon className="size-4" />;
-  } else if (status === "error") {
-    Icon = <XIcon className="size-4" />;
+    Icon = <SquareIcon className="size-4 fill-current" />;
+  }
+
+  if (isGenerating && onAbort) {
+    return (
+      <InputGroupButton
+        aria-label="Stop generating"
+        className={cn("text-muted-foreground hover:text-foreground", className)}
+        size={size}
+        type="button"
+        variant="ghost"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onAbort();
+        }}
+        {...props}
+      >
+        {children ?? Icon}
+      </InputGroupButton>
+    );
   }
 
   return (

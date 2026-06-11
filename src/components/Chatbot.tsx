@@ -94,6 +94,7 @@ const ChatBotDemo = ({
     const hasText = Boolean(message.text?.trim());
     const hasAttachments = Boolean(message.files?.length);
     if (!(hasText || hasAttachments)) return;
+    if (status === "streaming" || status === "submitted") return;
 
     try {
       setInput("");
