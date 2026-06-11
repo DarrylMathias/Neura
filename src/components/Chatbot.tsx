@@ -138,12 +138,9 @@ const ChatBotDemo = ({
     const errorPart = lastMessage.parts.find(
       (part) => part.type === "data-Error"
     );
-    if (errorPart) {
-      const errorMsg =
-        (errorPart as any).data?.agentData ??
-        "An unknown error occurred on the server.";
-      setError(errorMsg);
-    }
+    // Note: We deliberately do not setError() globally here anymore.
+    // The data-Error part is already beautifully rendered inside the conversation stream 
+    // via the <Tool> component below, so duplicating it globally at the top is redundant and ugly.
 
     const toolCalls = lastMessage.parts.filter((part) =>
       part.type.startsWith("tool-")

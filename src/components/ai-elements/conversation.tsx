@@ -62,7 +62,10 @@ export const Conversation = ({ className, children, ...props }: ConversationProp
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-scroll overscroll-contain"
+          className={cn(
+            "flex-1 overflow-y-scroll overscroll-contain",
+            "scrollbar-thin [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-800/50 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full"
+          )}
           style={{ overflowAnchor: "none", scrollBehavior: "auto" }}
           role="log"
         >
