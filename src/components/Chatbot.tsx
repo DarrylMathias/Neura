@@ -224,7 +224,7 @@ const ChatBotDemo = ({
         )}
 
         <Conversation className="flex-1 min-h-0">
-          <ConversationContent className="max-h-[70vh] md:max-h-none">
+          <ConversationContent>
             {messages.map((message, messageIndex) => (
               <div key={message.id}>
                 {message.role === "assistant" &&
@@ -372,7 +372,7 @@ const ChatBotDemo = ({
                 })}
               </div>
             ))}
-            {status !== "ready" && <Loader />}
+            {status === "submitted" && <Loader />}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
