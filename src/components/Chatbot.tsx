@@ -31,7 +31,7 @@ import { Action, Actions } from "@/components/ai-elements/actions";
 import { Fragment, useEffect, useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Response } from "@/components/ai-elements/response";
-import { CopyIcon, RefreshCcwIcon, TriangleAlertIcon } from "lucide-react";
+import { CopyIcon, RefreshCcwIcon, TriangleAlertIcon, Loader2Icon } from "lucide-react";
 import {
   Source,
   Sources,
@@ -83,11 +83,31 @@ const ChatBotDemo = ({
   const [input, setInput] = useState("");
   const [model, setModel] = useState<string>(models[0].value);
   const [error, setError] = useState<string | null>(null);
-  const { messages, sendMessage, status, regenerate, stop } = useChat();
   const [lastSavedMessageId, setLastSavedMessageId] = useState<string | null>(
     null
   );
+  const [initialMessages, setInitialMessages] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  
+  const { messages, setMessages, sendMessage, status, regenerate, stop } = useChat();
   const isSavingRef = useRef(false);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get("/api/user/conversations");
+        if (res.data?.messages) {
+          setMessages(res.data.messages);
+        }
+      } catch (err) {
+        console.error("Failed to load conversation history:", err);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
 
   const handleSubmit = async (message: PromptInputMessage) => {
     setError(null);
@@ -211,6 +231,11 @@ const ChatBotDemo = ({
 
   return (
     <div className="w-full h-full p-4 md:p-6 bg-zinc-950 overflow-hidden">
+      {isLoadingHistory ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
       <div className="flex flex-col h-full">
         {error && (
           <div className="bg-red-600/10 border border-red-600 text-red-400 p-2 mb-2 rounded-md text-sm flex items-center gap-2">
@@ -329,8 +354,7 @@ const ChatBotDemo = ({
                       }
 
                       if (
-                        part.type.startsWith("data-") &&
-                        messageIndex === messages.length - 1
+                        part.type.startsWith("data-")
                       ) {
                         const isError = part.type === "data-Error";
                         return (
@@ -428,6 +452,7 @@ const ChatBotDemo = ({
           </PromptInputFooter>
         </PromptInput>
       </div>
+      )}
     </div>
   );
 };
