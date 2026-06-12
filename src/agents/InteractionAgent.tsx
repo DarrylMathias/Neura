@@ -54,12 +54,12 @@ export async function createInteractionAgent(
 
       Current Location: ${JSON.stringify(location, null, 2)}
     `,
-    tools: {
+    tools: mode === "summary" ? {
       googlesearch,
       getDetailedLocationReport,
       currentLocation,
       ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
-    },
+    } : {},
     stopWhen: stepCountIs(10),
   });
 }

@@ -387,7 +387,7 @@ const ChatBotDemo = ({
                 })}
               </div>
             ))}
-            {status === "submitted" && <Loader />}
+            {(status === "submitted" || status === "streaming") && <Loader />}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>

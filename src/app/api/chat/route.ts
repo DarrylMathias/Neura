@@ -110,16 +110,18 @@ export async function POST(req: Request) {
 
         const agents = state.orchestrator;
 
-        await safeRun("InteractionAgent", "stream", async () => {
-          const intAgent = await createInteractionAgent(
-            streamingModel,
-            state,
-            location,
-            "plan"
-          );
-          const result = intAgent.stream({ messages: modalMsgs });
-          writer.merge(result.toUIMessageStream());
-        });
+        if (agents?.agentsToUse?.length > 0) {
+          await safeRun("InteractionAgent", "stream", async () => {
+            const intAgent = await createInteractionAgent(
+              streamingModel,
+              state,
+              location,
+              "plan"
+            );
+            const result = intAgent.stream({ messages: modalMsgs });
+            writer.merge(result.toUIMessageStream());
+          });
+        }
 
         // 2: Context Agent
         if (agents?.agentsToUse?.includes("ContextAgent")) {
