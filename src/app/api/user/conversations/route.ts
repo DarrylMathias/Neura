@@ -200,7 +200,11 @@ export async function GET(req: NextRequest) {
     // messages is stored as JSON in Prisma, return it directly
     const formattedMessages = conversation.messages.map((m) => {
       // Prisma stores the raw message object in the `message` Json field
-      return m.message;
+      const msg = m.message as any;
+      return {
+        ...msg,
+        createdAt: msg.createdAt || m.createdAt
+      };
     });
 
     console.log("[DEBUG] Formatted messages length:", formattedMessages.length);

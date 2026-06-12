@@ -90,7 +90,6 @@ const ChatBotDemo = ({
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   
   const { messages, setMessages, sendMessage, status, regenerate, stop } = useChat();
-  const isSavingRef = useRef(false);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -208,21 +207,15 @@ const ChatBotDemo = ({
     if (status === "streaming" && lastMessage.role === "assistant") {
       return;
     }
-    if (isSavingRef.current) {
-      return;
-    }
 
     const saveMessage = async () => {
-      isSavingRef.current = true;
+      setLastSavedMessageId(lastMessage.id);
       try {
         await axios.post("/api/user/conversations", {
           message: lastMessage,
         });
-        setLastSavedMessageId(lastMessage.id);
       } catch (err) {
         console.error("Failed to save message:", err);
-      } finally {
-        isSavingRef.current = false;
       }
     };
 
